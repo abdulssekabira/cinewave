@@ -51,7 +51,7 @@ export function AuthForm({ mode, next }: { mode: Mode; next: string }) {
             />
           </div>
         )}
-        <button className="btn btn-primary" style={{ width: '100%' }} disabled={pending}>
+        <button className="btn btn-accent" style={{ width: '100%' }} disabled={pending}>
           {pending ? 'Please wait…' : c.cta}
         </button>
       </form>

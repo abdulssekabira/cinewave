@@ -51,3 +51,19 @@ export function progressPercent(position: number, duration: number | null, runti
   if (!total) return 0;
   return Math.min(100, Math.round((position / total) * 100));
 }
+
+/** "8.2" for display next to a star, or null when there is no rating. */
+export function ratingLabel(rating: number | null | undefined): string | null {
+  return rating == null ? null : Number(rating).toFixed(1);
+}
+
+/**
+ * Turns a stored image path into a full URL. Paths starting with "/" are
+ * files served by the website (sample artwork); full URLs pass through.
+ */
+export function imageUrl(path: string | null | undefined, siteBase?: string | null): string | null {
+  if (!path) return null;
+  if (/^https?:\/\//.test(path)) return path;
+  if (!siteBase) return path;
+  return siteBase.replace(/\/$/, '') + (path.startsWith('/') ? path : `/${path}`);
+}

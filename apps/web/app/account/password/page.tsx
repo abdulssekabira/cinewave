@@ -17,7 +17,7 @@ export default function PasswordPage() {
             <label htmlFor="password">New password</label>
             <input id="password" name="password" type="password" minLength={8} required className="input" autoComplete="new-password" />
           </div>
-          <button className="btn btn-primary" style={{ width: '100%' }} disabled={pending}>
+          <button className="btn btn-accent" style={{ width: '100%' }} disabled={pending}>
             {pending ? 'Saving…' : 'Update password'}
           </button>
         </form>

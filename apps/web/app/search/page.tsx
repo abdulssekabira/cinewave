@@ -21,7 +21,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <div className="page">
-      <h1 className="page-title">Browse</h1>
+      <h1 className="page-title">{params.sort === 'newest' ? 'New & Popular' : 'Movies'}</h1>
       <form className="filters" role="search" action="/search">
         <label className="sr-only" htmlFor="q">Search titles</label>
         <input id="q" name="q" className="input" placeholder="Search titles…" defaultValue={sp.q ?? ''} />
@@ -39,7 +39,7 @@ export default async function SearchPage({ searchParams }: Props) {
           <option value="newest">Newest</option>
           <option value="az">A–Z</option>
         </select>
-        <button className="btn btn-primary" type="submit">Search</button>
+        <button className="btn btn-accent" type="submit">Search</button>
       </form>
 
       {results.length ? (

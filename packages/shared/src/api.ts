@@ -29,6 +29,18 @@ export async function getFeatured(sb: SupabaseClient): Promise<CatalogTitle | nu
   return (data as CatalogTitle) ?? null;
 }
 
+/** Titles for the hero carousel: featured first, topped up with popular titles. */
+export async function getHeroTitles(sb: SupabaseClient, limit = 5): Promise<CatalogTitle[]> {
+  const { data, error } = await sb
+    .from(CATALOG)
+    .select('*')
+    .order('is_featured', { ascending: false })
+    .order('popularity', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data as CatalogTitle[];
+}
+
 export async function getHomeRows(sb: SupabaseClient): Promise<HomeRow[]> {
   const [trending, recent, free, collections] = await Promise.all([
     sb.from(CATALOG).select('*').order('popularity', { ascending: false }).limit(20),
@@ -43,7 +55,7 @@ export async function getHomeRows(sb: SupabaseClient): Promise<HomeRow[]> {
   for (const r of [trending, recent, free, collections]) if (r.error) throw r.error;
 
   const rows: HomeRow[] = [
-    { key: 'trending', label: 'Trending Now', titles: trending.data as CatalogTitle[] },
+    { key: 'trending', label: 'Trending This Week', titles: trending.data as CatalogTitle[] },
     { key: 'recent', label: 'Recently Added', titles: recent.data as CatalogTitle[] },
     { key: 'free', label: 'Free to Watch', titles: free.data as CatalogTitle[] },
   ];

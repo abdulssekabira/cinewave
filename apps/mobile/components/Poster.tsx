@@ -1,55 +1,87 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { genreLabel, posterPalette, type CatalogTitle } from '@cinewave/shared';
-import { colors, fonts } from '@/lib/theme';
+import { Image } from 'expo-image';
+import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { formatRuntime, posterPalette, ratingLabel, type CatalogTitle } from '@cinewave/shared';
+import { colors, F, img, radius } from '@/lib/theme';
 
-export function PosterArt({ title, large }: { title: CatalogTitle; large?: boolean }) {
-  if (title.poster_url) {
-    return <Image source={{ uri: title.poster_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />;
+const fill = { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0 };
+
+/** Poster image, or generated colours + title when there's no artwork yet. */
+export function Art({ title }: { title: CatalogTitle }) {
+  const uri = img(title.poster_url);
+  if (uri) {
+    return (
+      <Image source={{ uri }} style={fill} contentFit="cover" contentPosition="top" transition={200} />
+    );
   }
   const p = posterPalette(title.slug);
   return (
-    <LinearGradient colors={[p.from, p.to]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.generated}>
+    <LinearGradient colors={[p.to, p.from]} start={{ x: 0.2, y: 0 }} end={{ x: 0.8, y: 1 }} style={[fill, styles.generated]}>
       <View style={[styles.rule, { backgroundColor: p.accent }]} />
-      <Text style={[styles.pgTitle, large && { fontSize: 24 }]} numberOfLines={3}>{title.title}</Text>
-      {title.release_year ? <Text style={styles.pgYear}>{title.release_year}</Text> : null}
+      <Text style={styles.genTitle} numberOfLines={3}>{title.title}</Text>
     </LinearGradient>
   );
 }
 
-export function Badges({ title }: { title: CatalogTitle }) {
-  const color =
-    title.required_plan === 'free' ? colors.ok : title.required_plan === 'premium' ? colors.accent : colors.standard;
+/** Wide art for hero and landscape cards: backdrop if present, else poster. */
+export function WideArt({ title }: { title: CatalogTitle }) {
+  const backdrop = img(title.backdrop_url);
+  const uri = backdrop ?? img(title.poster_url);
+  if (uri) {
+    // Portrait posters in a wide frame: keep the top third (faces), not the middle.
+    return (
+      <Image
+        source={{ uri }}
+        style={fill}
+        contentFit="cover"
+        contentPosition={backdrop ? 'center' : { top: '12%' }}
+        transition={200}
+      />
+    );
+  }
+  const p = posterPalette(title.slug);
+  return <LinearGradient colors={[p.to, p.from]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={fill} />;
+}
+
+export function Rating({ title, style }: { title: CatalogTitle; style?: ViewStyle }) {
+  const r = ratingLabel(title.rating);
+  const runtime = formatRuntime(title.runtime_minutes);
+  if (!r && !runtime) return null;
   return (
-    <View style={styles.badges}>
-      <Text style={[styles.badge, { color }]}>{title.required_plan.toUpperCase()}</Text>
-      {title.downloadable && (
-        <Text style={[styles.badge, { marginLeft: 'auto' }]} accessibilityLabel="Download available">↓</Text>
-      )}
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 10 }, style]}>
+      {runtime ? <Text style={styles.metaText}>{runtime}</Text> : null}
+      {r ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Ionicons name="star" size={13} color={colors.gold} />
+          <Text style={styles.metaText}>{r}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
 
-export function PosterCard({ title, width = 128, progress }: { title: CatalogTitle; width?: number; progress?: number }) {
+function PlanTag({ title }: { title: CatalogTitle }) {
+  if (title.required_plan === 'free') return null;
+  return (
+    <View style={styles.tag}>
+      <Text style={styles.tagText}>{title.required_plan === 'premium' ? 'PREMIUM' : 'STANDARD'}</Text>
+    </View>
+  );
+}
+
+export function PosterCard({ title, width = 124 }: { title: CatalogTitle; width?: number }) {
   return (
     <Link href={`/title/${title.slug}`} asChild>
       <Pressable style={{ width }} accessibilityRole="link" accessibilityLabel={title.title}>
         {({ pressed }) => (
           <>
-            <View style={[styles.poster, pressed && { opacity: 0.8 }]}>
-              <PosterArt title={title} />
-              <Badges title={title} />
+            <View style={[styles.poster, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}>
+              <Art title={title} />
+              <PlanTag title={title} />
             </View>
-            {progress !== undefined && (
-              <View style={styles.progress}>
-                <View style={[styles.progressFill, { width: `${progress}%` }]} />
-              </View>
-            )}
             <Text style={styles.cardTitle} numberOfLines={1}>{title.title}</Text>
-            <Text style={styles.cardSub} numberOfLines={1}>
-              {[title.release_year, title.genres[0] && genreLabel(title.genres[0])].filter(Boolean).join(' · ')}
-            </Text>
           </>
         )}
       </Pressable>
@@ -57,31 +89,53 @@ export function PosterCard({ title, width = 128, progress }: { title: CatalogTit
   );
 }
 
-const styles = StyleSheet.create({
-  poster: {
-    aspectRatio: 2 / 3,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: colors.surface,
+export function LandscapeCard({
+  title,
+  progress,
+  width = 196,
+}: {
+  title: CatalogTitle;
+  progress: number;
+  width?: number;
+}) {
+  return (
+    <Link href={`/title/${title.slug}`} asChild>
+      <Pressable style={{ width }} accessibilityRole="link" accessibilityLabel={`${title.title}, ${progress}% watched`}>
+        <View style={styles.landscape}>
+          <WideArt title={title} />
+          <LinearGradient colors={['transparent', 'rgba(0,0,0,0.55)']} style={fill} />
+          <View style={styles.playDot}>
+            <Ionicons name="play" size={14} color="#fff" style={{ marginLeft: 2 }} />
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+          </View>
+        </View>
+        <Text style={styles.cardTitle} numberOfLines={1}>{title.title}</Text>
+        <Text style={styles.cardSub}>{progress}% watched</Text>
+      </Pressable>
+    </Link>
+  );
+}
+
+export const styles = StyleSheet.create({
+  poster: { aspectRatio: 2 / 3, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surface },
+  generated: { justifyContent: 'flex-end', padding: 12 },
+  rule: { width: 22, height: 3, borderRadius: 2, marginBottom: 8 },
+  genTitle: { color: '#fff', fontFamily: F.extrabold, fontSize: 16, lineHeight: 19 },
+  tag: {
+    position: 'absolute', top: 8, left: 8, backgroundColor: colors.accent,
+    borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
   },
-  generated: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'flex-end', padding: 12 },
-  rule: { width: 24, height: 3, borderRadius: 2, marginBottom: 8 },
-  pgTitle: { color: '#fff', fontFamily: fonts.display, fontWeight: '700', fontSize: 17, lineHeight: 19 },
-  pgYear: { color: 'rgba(255,255,255,0.8)', fontSize: 10, letterSpacing: 1.5, marginTop: 4 },
-  badges: { position: 'absolute', top: 6, left: 6, right: 6, flexDirection: 'row' },
-  badge: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    color: colors.text,
-    backgroundColor: 'rgba(10,11,15,0.8)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    overflow: 'hidden',
+  tagText: { color: '#fff', fontFamily: F.bold, fontSize: 8.5, letterSpacing: 0.8 },
+  cardTitle: { color: colors.text, fontFamily: F.semibold, fontSize: 13, marginTop: 8 },
+  cardSub: { color: colors.faint, fontFamily: F.medium, fontSize: 11, marginTop: 2 },
+  metaText: { color: '#e6e6ee', fontFamily: F.medium, fontSize: 12.5 },
+  landscape: { aspectRatio: 16 / 9, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surface },
+  playDot: {
+    position: 'absolute', right: 10, bottom: 12, width: 30, height: 30, borderRadius: 15,
+    backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center',
   },
-  progress: { height: 3, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, marginTop: 6, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: colors.accent },
-  cardTitle: { color: colors.text, fontSize: 13, fontWeight: '600', marginTop: 8 },
-  cardSub: { color: colors.faint, fontSize: 11, marginTop: 2 },
+  progressTrack: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, backgroundColor: 'rgba(255,255,255,0.25)' },
+  progressFill: { height: 3, backgroundColor: colors.accent },
 });

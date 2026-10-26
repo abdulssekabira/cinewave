@@ -25,7 +25,7 @@ export function ProfileForm({ name, country }: { name: string; country: string }
           style={{ textTransform: 'uppercase', maxWidth: 120 }}
         />
       </div>
-      <button className="btn btn-primary btn-small" disabled={pending}>
+      <button className="btn btn-accent btn-small" disabled={pending}>
         {pending ? 'Saving…' : 'Save'}
       </button>
     </form>

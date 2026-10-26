@@ -1,16 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { getGenres, searchTitles, type CatalogTitle, type Genre } from '@cinewave/shared';
-import { PosterCard } from '@/components/Poster';
+import { PosterGrid } from '@/components/Grid';
 import { Empty, ErrorState } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
-import { colors } from '@/lib/theme';
+import { colors, F, radius } from '@/lib/theme';
 
 export default function Search() {
-  const { width } = useWindowDimensions();
-  const cols = width > 600 ? 4 : 3;
-  const cardW = (width - 32 - (cols - 1) * 12) / cols;
-
   const [query, setQuery] = useState('');
   const [genre, setGenre] = useState<string | undefined>();
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -34,68 +31,58 @@ export default function Search() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <View style={{ padding: 16, paddingBottom: 8 }}>
+      <View style={styles.searchBox}>
+        <Ionicons name="search" size={18} color={colors.faint} />
         <TextInput
           style={styles.input}
           value={query}
           onChangeText={setQuery}
-          placeholder="Search titles…"
+          placeholder="Search movies…"
           placeholderTextColor={colors.faint}
           returnKeyType="search"
-          accessibilityLabel="Search titles"
+          autoFocus
+          accessibilityLabel="Search movies"
         />
+        {query ? (
+          <Pressable onPress={() => setQuery('')} accessibilityLabel="Clear search" hitSlop={8}>
+            <Ionicons name="close-circle" size={18} color={colors.faint} />
+          </Pressable>
+        ) : null}
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={{ flexGrow: 0 }}>
-        {[{ slug: undefined, name: 'All' } as { slug?: string; name: string }, ...genres].map((g) => {
-          const on = genre === g.slug;
-          return (
-            <Pressable key={g.name} onPress={() => setGenre(g.slug)} accessibilityState={{ selected: on }}>
-              <Text style={[styles.chip, on && styles.chipOn]}>{g.name}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+      <View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {[{ slug: undefined, name: 'All' } as { slug?: string; name: string }, ...genres].map((g) => {
+            const on = genre === g.slug;
+            return (
+              <Pressable key={g.name} onPress={() => setGenre(g.slug)} accessibilityRole="button" accessibilityState={{ selected: on }}>
+                <View style={[styles.chip, on && styles.chipOn]}>
+                  <Text style={[styles.chipText, on && { color: '#fff' }]}>{g.name}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {error ? (
         <ErrorState message={error} onRetry={() => setNonce((n) => n + 1)} />
       ) : results && results.length === 0 ? (
-        <Empty title="No titles found" text="Try a different search or genre." />
+        <Empty icon="search-outline" title="No movies found" text="Try a different search or genre." />
       ) : (
-        <FlatList
-          key={cols}
-          data={results ?? []}
-          numColumns={cols}
-          keyExtractor={(t) => t.id}
-          contentContainerStyle={{ padding: 16, gap: 18 }}
-          columnWrapperStyle={{ gap: 12 }}
-          renderItem={({ item }) => <PosterCard title={item} width={cardW} />}
-        />
+        <PosterGrid titles={results ?? []} />
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  input: {
-    height: 46,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.line,
-    color: colors.text,
-    paddingHorizontal: 14,
-    fontSize: 15,
+  searchBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 20, marginTop: 6,
+    height: 50, borderRadius: radius.md, backgroundColor: colors.raised, paddingHorizontal: 16,
   },
-  chips: { paddingHorizontal: 16, gap: 8, paddingBottom: 4 },
-  chip: {
-    color: colors.muted,
-    fontSize: 13,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.line,
-    overflow: 'hidden',
-  },
-  chipOn: { color: colors.accentInk, backgroundColor: colors.accent, borderColor: colors.accent },
+  input: { flex: 1, color: colors.text, fontFamily: F.medium, fontSize: 15, height: '100%' },
+  chips: { paddingHorizontal: 20, gap: 8, paddingVertical: 14 },
+  chip: { backgroundColor: colors.raised, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 },
+  chipOn: { backgroundColor: colors.accent },
+  chipText: { color: colors.muted, fontFamily: F.semibold, fontSize: 13 },
 });

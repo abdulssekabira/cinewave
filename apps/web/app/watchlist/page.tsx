@@ -21,7 +21,7 @@ export default async function WatchlistPage() {
         <div className="empty">
           <h2>Your list is empty</h2>
           <p>Add films with “+ My List” and they’ll show up here on every device.</p>
-          <Link href="/search" className="btn btn-primary" style={{ marginTop: 16 }}>Browse films</Link>
+          <Link href="/search" className="btn btn-accent" style={{ marginTop: 16 }}>Browse films</Link>
         </div>
       )}
     </div>

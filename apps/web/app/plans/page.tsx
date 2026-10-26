@@ -41,9 +41,9 @@ export default async function PlansPage() {
             <ul>{features(p).map((f) => <li key={f}>{f}</li>)}</ul>
             <div style={{ marginTop: 'auto' }}>
               {current === p.id ? (
-                <button className="btn btn-ghost" disabled style={{ width: '100%' }}>Current plan</button>
+                <button className="btn btn-gray" disabled style={{ width: '100%' }}>Current plan</button>
               ) : p.id === 'free' ? null : (
-                <button className="btn btn-primary" disabled style={{ width: '100%' }} title="Checkout arrives in Phase 4">
+                <button className="btn btn-accent" disabled style={{ width: '100%' }} title="Checkout arrives in Phase 4">
                   Subscribe — coming soon
                 </button>
               )}

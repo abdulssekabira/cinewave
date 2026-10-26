@@ -1,52 +1,48 @@
-import { Link, Stack } from 'expo-router';
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Pressable, Text, View } from 'react-native';
-import { AuthProvider, useAuth } from '@/lib/auth';
-import { colors, fonts } from '@/lib/theme';
-
-function HeaderRight() {
-  const { session } = useAuth();
-  return (
-    <View style={{ flexDirection: 'row', gap: 18, alignItems: 'center' }}>
-      <Link href="/search" asChild>
-        <Pressable accessibilityLabel="Search"><Text style={{ color: colors.text, fontSize: 15 }}>Search</Text></Pressable>
-      </Link>
-      <Link href={session ? '/account' : '/login'} asChild>
-        <Pressable accessibilityLabel={session ? 'Account' : 'Sign in'}>
-          <Text style={{ color: colors.accent, fontSize: 15, fontWeight: '700' }}>{session ? 'Account' : 'Sign in'}</Text>
-        </Pressable>
-      </Link>
-    </View>
-  );
-}
-
-function Wordmark() {
-  return (
-    <Text style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: '700', color: colors.text }}>
-      Cine<Text style={{ color: colors.accent, fontStyle: 'italic' }}>Wave</Text>
-    </Text>
-  );
-}
+import { View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthProvider } from '@/lib/auth';
+import { colors, F } from '@/lib/theme';
 
 export default function RootLayout() {
+  const [loaded] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+  if (!loaded) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
+
   return (
-    <AuthProvider>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.bg },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-          contentStyle: { backgroundColor: colors.bg },
-        }}
-      >
-        <Stack.Screen name="index" options={{ headerTitle: () => <Wordmark />, headerRight: () => <HeaderRight /> }} />
-        <Stack.Screen name="title/[slug]" options={{ title: '', headerTransparent: true }} />
-        <Stack.Screen name="search" options={{ title: 'Browse' }} />
-        <Stack.Screen name="login" options={{ title: '', presentation: 'modal' }} />
-        <Stack.Screen name="account" options={{ title: 'Account' }} />
-        <Stack.Screen name="watchlist" options={{ title: 'My List' }} />
-      </Stack>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: colors.bg },
+            headerTintColor: colors.text,
+            headerTitleStyle: { fontFamily: F.bold },
+            headerShadowVisible: false,
+            contentStyle: { backgroundColor: colors.bg },
+            animation: 'slide_from_right',
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="title/[slug]" options={{ headerShown: false }} />
+          <Stack.Screen name="search" options={{ title: 'Search' }} />
+          <Stack.Screen name="login" options={{ title: '', presentation: 'modal' }} />
+        </Stack>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

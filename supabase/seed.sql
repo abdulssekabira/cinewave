@@ -110,3 +110,57 @@ select c.id, t.id, row_number() over ()
 from public.collections c, public.titles t
 where c.slug = 'staff-picks'
   and t.slug in ('salt-and-honey', 'glass-horizon', 'little-giants');
+
+-- ---------------------------------------------------------------------
+-- Sample ratings (clearly labelled as sample data).
+-- ---------------------------------------------------------------------
+update public.titles set rating = v.r, rating_source = 'Sample data'
+from (values
+  ('tides-of-kampala', 7.9), ('the-last-signal', 7.2), ('salt-and-honey', 8.1),
+  ('glass-horizon', 8.4), ('night-market', 6.8), ('little-giants', 7.6),
+  ('paper-crowns', 6.9), ('below-the-red-earth', 7.1)
+) as v(slug, r)
+where titles.slug = v.slug;
+
+-- ---------------------------------------------------------------------
+-- Partner films supplied by the owner (artwork in apps/web/public/sample).
+-- DEV ONLY: the rights rows below are placeholders. Before these titles go
+-- live, replace them with the signed agreement for each film (territories,
+-- dates, ads, downloads). Synopses and years must come from the partner.
+-- ---------------------------------------------------------------------
+insert into public.titles
+  (id, slug, title, tagline, synopsis, release_year, runtime_minutes, maturity_rating,
+   original_language, audio_languages, subtitle_languages, credits, poster_url,
+   required_plan, status, is_featured, popularity)
+values
+  ('20000000-0000-4000-8000-000000000001', 'rise-of-the-footsoldier-retribution',
+   'Rise of the Footsoldier: Retribution', 'Revenge comes to Ibiza.',
+   'Synopsis to be supplied by the partner.', null, null, '18+',
+   'en', '{en}', '{en}',
+   '[{"name":"Nick Nevern","role":"Director"},{"name":"Craig Fairbrass","role":"Cast"}]',
+   '/sample/retribution.jpg', 'standard', 'published', true, 1500),
+  ('20000000-0000-4000-8000-000000000002', 'masterplan',
+   'Masterplan', null,
+   'Synopsis to be supplied by the partner.', null, null, null,
+   'en', '{en}', '{en}', '[]',
+   '/sample/masterplan.jpg', 'premium', 'published', true, 1400);
+
+insert into public.title_genres (title_id, genre_id)
+select t.id, g.id from (values
+  ('20000000-0000-4000-8000-000000000001', 'action'),
+  ('20000000-0000-4000-8000-000000000001', 'thriller'),
+  ('20000000-0000-4000-8000-000000000002', 'comedy')
+) as v(title_id, genre_slug)
+join public.titles t on t.id = v.title_id::uuid
+join public.genres g on g.slug = v.genre_slug;
+
+insert into public.rights
+  (title_id, partner_id, contract_ref, territories, starts_at, ends_at,
+   allow_stream, allow_download, allow_ads, notes)
+values
+  ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+   'DEV-ONLY-NO-CONTRACT', '{*}', now() - interval '1 day', null, true, false, false,
+   'Placeholder for local testing. Replace with the signed agreement before launch.'),
+  ('20000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001',
+   'DEV-ONLY-NO-CONTRACT', '{*}', now() - interval '1 day', null, true, false, false,
+   'Placeholder for local testing. Replace with the signed agreement before launch.');

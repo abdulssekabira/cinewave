@@ -11,9 +11,22 @@ cinewave/
 │  └─ shared/     Types, data access and business rules used by BOTH apps
 └─ supabase/
    ├─ migrations/ Database schema, access rules (RLS), storage bucket
-   ├─ seed.sql    Sample plans, genres and 9 placeholder titles
+   ├─ seed.sql    Sample plans, genres, 9 placeholder titles + 2 partner films
    └─ tests/      Access-rule checks
 ```
+
+## Design
+
+| | Website | Android app |
+|---|---|---|
+| Look | Cinematic, poster-led (CineStream reference) | Rounded cards, bottom tabs (mobile reference) |
+| Accent | Red `#e5192e` — `--accent` in `apps/web/app/globals.css` | Orange `#ff7a2f` — `colors.accent` in `apps/mobile/lib/theme.ts` |
+| Fonts | Bebas Neue (titles) + Inter, self-hosted | Plus Jakarta Sans |
+| Home | Rotating hero with Play / More Info, rows with page dots | Greeting, swipeable hero cards, Continue Watching, rows |
+| Title | Full-bleed art, chips, cast, details | Full-bleed art, chips, synopsis, cast, Watch Now bar |
+| Player | Overlay player: title, rating, synopsis, seek bar, volume, settings, full screen, keyboard shortcuts | Phase 3 |
+
+Posters without a wide backdrop are shown as blurred fill + sharp key art on the right (desktop) or full-bleed (phone). Upload a 16:9 backdrop for the best hero.
 
 ## What works today (Phase 2 foundation)
 
@@ -60,7 +73,8 @@ The seed data includes deliberate test cases: a **draft** title and an **expired
 2. Open **SQL Editor** and run these files **in order**, one at a time:
    1. `supabase/migrations/20261027000000_init.sql`
    2. `supabase/migrations/20261027000100_storage.sql`
-   3. `supabase/seed.sql`
+   3. `supabase/migrations/20261027000200_ratings.sql`
+   4. `supabase/seed.sql`
 3. **Authentication → URL Configuration**
    - Site URL: `http://localhost:3000`
    - Redirect URLs: add `http://localhost:3000/auth/confirm`
@@ -78,6 +92,8 @@ npm run web                                  # http://localhost:3000
 ### 4. Run the Android app
 ```bash
 copy apps\mobile\.env.example apps\mobile\.env   # same URL and anon key
+# EXPO_PUBLIC_SITE_URL lets the app load sample posters from the website:
+#   emulator → http://10.0.2.2:3000     phone → http://YOUR-PC-IP:3000
 npm run android                              # opens in the emulator
 # or: npm run mobile, then scan the QR code with Expo Go on your phone
 ```
@@ -104,6 +120,8 @@ Premium titles will now show **Play**, and download-eligible titles show **Downl
 - **Never** put the Supabase `service_role` key, Mux secrets or Stripe secrets in `NEXT_PUBLIC_*` or `EXPO_PUBLIC_*` variables. Those are visible to anyone.
 - New tables need `enable row level security` and policies in a **new migration file** — never edit an old one once it has run.
 - Every placeholder title says "Sample title". Replace them with partner films, each with its **contract reference** in `rights`.
+- **Retribution** and **Masterplan** are seeded with `DEV-ONLY-NO-CONTRACT` rights so you can see real artwork locally. Do **not** publish them until each has a signed agreement covering streaming, territories and the poster art. Masterplan's poster is branded as an Amazon Prime original, so confirm who holds its distribution rights before using it.
+- Ratings must always state a source (`rating_source`). Sample ratings are labelled "Sample data".
 
 ## Next steps
 

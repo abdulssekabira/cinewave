@@ -9,7 +9,7 @@ insert into auth.users (id, email) values
 select count(*) from public.profiles;
 
 set role anon;
-\echo '2. anon catalogue (expect 7, no draft, no expired night-market):'
+\echo '2. anon catalogue (expect 9, no draft, no expired night-market):'
 select count(*), bool_or(slug='night-market') as has_expired, bool_or(slug='draft-unreleased') as has_draft from public.catalog_titles;
 \echo '3. anon sees rights/partners (expect 0,0):'
 select (select count(*) from public.rights), (select count(*) from public.partners);

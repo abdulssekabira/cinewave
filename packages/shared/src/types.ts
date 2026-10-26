@@ -29,6 +29,8 @@ export interface CatalogTitle {
   published_at: string | null;
   genres: string[];
   downloadable: boolean;
+  rating: number | null;
+  rating_source: string | null;
 }
 
 export interface Plan {

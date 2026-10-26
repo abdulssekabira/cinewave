@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getActiveSubscription, getProfile, PLAN_LABEL } from '@cinewave/shared';
 import { getUser } from '@/lib/supabase/server';
 import { ProfileForm } from '@/components/ProfileForm';
+import { signOut } from '@/app/login/actions';
 
 export const metadata: Metadata = { title: 'Account' };
 
@@ -38,7 +39,7 @@ export default async function AccountPage() {
             </>
           )}
         </dl>
-        <Link href="/plans" className="btn btn-ghost btn-small" style={{ marginTop: 16 }}>
+        <Link href="/plans" className="btn btn-gray btn-small" style={{ marginTop: 16 }}>
           {sub ? 'Change plan' : 'See plans'}
         </Link>
       </section>
@@ -52,7 +53,11 @@ export default async function AccountPage() {
       <section className="panel">
         <h2>Security & privacy</h2>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <Link href="/account/password" className="btn btn-ghost btn-small">Change password</Link>
+          <Link href="/account/password" className="btn btn-gray btn-small">Change password</Link>
+          <Link href="/watchlist" className="btn btn-gray btn-small">My List</Link>
+          <form action={signOut}>
+            <button type="submit" className="btn btn-gray btn-small">Sign out</button>
+          </form>
         </div>
         <p style={{ color: 'var(--text-faint)', fontSize: 13, marginBottom: 0 }}>
           Account deletion requests will be available here before launch.
