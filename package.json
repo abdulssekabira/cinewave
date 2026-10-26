@@ -1,0 +1,19 @@
+{
+  "name": "cinewave",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "web": "npm run dev --workspace=@cinewave/web",
+    "web:build": "npm run build --workspace=@cinewave/web",
+    "android": "npm run android --workspace=@cinewave/mobile",
+    "mobile": "npm run start --workspace=@cinewave/mobile",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "overrides": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  }
+}

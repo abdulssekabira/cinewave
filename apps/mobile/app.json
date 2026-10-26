@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "CineWave",
+    "slug": "cinewave",
+    "scheme": "cinewave",
+    "version": "0.1.0",
+    "orientation": "default",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0a0b0f",
+    "android": {
+      "package": "com.cinewave.app",
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0b0f"
+      }
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

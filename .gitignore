@@ -1,0 +1,22 @@
+node_modules/
+.next/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets
+.env
+.env.local
+.env*.local
+
+# native builds
+android/
+ios/
+*.apk
+*.aab
+*.keystore
+
+.DS_Store
+Thumbs.db
