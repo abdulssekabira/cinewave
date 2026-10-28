@@ -523,3 +523,4 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 /* Video upload progress */
 .a-progress { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; margin-bottom: 8px; }
 .a-progress > div { height: 100%; background: var(--accent); transition: width .3s; }
+.a-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 18px; align-items: start; }

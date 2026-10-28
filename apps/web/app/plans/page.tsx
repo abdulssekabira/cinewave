@@ -11,7 +11,7 @@ function features(p: Plan): string[] {
   f.push(`Up to ${p.max_quality}`);
   f.push(`${p.max_streams} screen${p.max_streams > 1 ? 's' : ''} at a time`);
   if (p.downloads_allowed) f.push('Offline downloads (Android)');
-  return f;
+  return [...f, ...(p.features ?? [])];
 }
 
 export default async function PlansPage() {
@@ -29,11 +29,15 @@ export default async function PlansPage() {
         {plans.map((p) => (
           <article key={p.id} className={`plan${current === p.id ? ' current' : ''}`}>
             <h3>{p.name}</h3>
+            {p.description && <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '-4px 0 8px' }}>{p.description}</p>}
             <div className="price">
-              {formatPrice(p.price_cents, p.currency)}
-              {p.price_cents > 0 && <small> / month</small>}
+              {p.price_cents > 0 || !p.weekly_price_cents ? (
+                <>{formatPrice(p.price_cents, p.currency)}{p.price_cents > 0 && <small> / month</small>}</>
+              ) : (
+                <>{formatPrice(p.weekly_price_cents, p.currency)}<small> / week</small></>
+              )}
             </div>
-            {Boolean(p.weekly_price_cents || p.annual_price_cents) && (
+            {p.price_cents > 0 && Boolean(p.weekly_price_cents || p.annual_price_cents) && (
               <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: -8 }}>
                 {p.weekly_price_cents ? <>or {formatPrice(p.weekly_price_cents, p.currency)} / week</> : null}
                 {p.weekly_price_cents && p.annual_price_cents ? ' · ' : null}
@@ -54,7 +58,7 @@ export default async function PlansPage() {
         ))}
       </div>
       <p style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 20 }}>
-        Pay with MTN Mobile Money, Airtel Money or Visa/Mastercard. Prices are placeholders and will be confirmed before launch.
+        Pay with MTN Mobile Money, Airtel Money or Visa/Mastercard.
       </p>
     </div>
   );

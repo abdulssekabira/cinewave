@@ -45,6 +45,9 @@ export interface Plan {
   max_quality: string;
   downloads_allowed: boolean;
   max_streams: number;
+  description?: string | null;
+  features?: string[];
+  active?: boolean;
 }
 
 export interface Genre {
