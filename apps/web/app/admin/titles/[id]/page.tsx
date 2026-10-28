@@ -14,6 +14,8 @@ import {
 import { deleteRights, endRights } from '../actions';
 import { RightsForm } from '@/components/admin/RightsForm';
 import { TitleForm } from '@/components/admin/TitleForm';
+import { VideoUpload } from '@/components/admin/VideoUpload';
+import { muxConfigured } from '@/lib/mux';
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string }> };
 
@@ -25,12 +27,14 @@ export default async function EditTitle({ params, searchParams }: Props) {
   if (!UUID.test(id)) notFound();
   const { sb, isAdmin } = await requireStaff();
 
-  const [{ data: t }, genres, { data: tg }, { data: rightsData }, { data: partnerData }] = await Promise.all([
+  const [{ data: t }, genres, { data: tg }, { data: rightsData }, { data: partnerData }, { data: media }] = await Promise.all([
     sb.from('titles').select('*').eq('id', id).maybeSingle(),
     getGenres(sb),
     sb.from('title_genres').select('genres(slug)').eq('title_id', id),
     sb.from('rights').select('*').eq('title_id', id).order('starts_at', { ascending: false }),
     sb.from('partners').select('*').order('name'),
+    sb.from('media_assets').select('status, duration_seconds, error_text')
+      .eq('title_id', id).eq('kind', 'feature').order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (!t) notFound();
 
@@ -128,11 +132,13 @@ export default async function EditTitle({ params, searchParams }: Props) {
         )}
       </section>
 
-      <section className="a-card" style={{ marginTop: 24 }}>
+      <section className="a-card" style={{ marginTop: 24 }} id="video">
         <h2>Video file</h2>
-        <p className="a-muted" style={{ margin: 0 }}>
-          Uploading the film itself arrives with the video provider (Phase 3). The player already checks rights and plans before it plays.
-        </p>
+        <VideoUpload
+          titleId={title.id}
+          connected={muxConfigured()}
+          initial={media ? { status: media.status, duration: media.duration_seconds, error: media.error_text } : { status: 'none' }}
+        />
       </section>
     </>
   );

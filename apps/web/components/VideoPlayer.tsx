@@ -61,7 +61,7 @@ export function VideoPlayer({
   const toggle = useCallback(() => {
     const v = video.current;
     if (!src || !v) {
-      flash('Video isn’t connected yet — playback arrives once the video provider is set up.');
+      flash('This film’s video hasn’t been uploaded yet. Check back soon.');
       return;
     }
     if (v.paused) v.play().catch(() => flash('Playback failed. Check your connection and try again.'));
@@ -81,7 +81,8 @@ export function VideoPlayer({
     const el = wrap.current;
     if (!el) return;
     if (document.fullscreenElement) document.exitFullscreen();
-    else el.requestFullscreen?.();
+    else if (el.requestFullscreen) el.requestFullscreen();
+    else (video.current as HTMLVideoElement & { webkitEnterFullscreen?: () => void })?.webkitEnterFullscreen?.(); // iPhone
   };
 
   // Hide controls after 3s of no movement while playing.
@@ -121,6 +122,28 @@ export function VideoPlayer({
     return () => window.removeEventListener('keydown', onKey);
   }, [toggle, src]);
 
+  // Attach the stream: Safari/Android play HLS natively, others use hls.js.
+  useEffect(() => {
+    const v = video.current;
+    if (!v || !src) return;
+    if (!src.includes('.m3u8') || v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = src;
+      return () => { v.removeAttribute('src'); v.load(); };
+    }
+    let hls: { destroy(): void } | null = null;
+    let cancelled = false;
+    import('hls.js').then(({ default: Hls }) => {
+      if (cancelled) return;
+      if (!Hls.isSupported()) { v.src = src; return; }
+      const h = new Hls({ capLevelToPlayerSize: true });
+      h.loadSource(src);
+      h.attachMedia(v);
+      h.on(Hls.Events.ERROR, (_e, d) => { if (d.fatal) flash('This video could not be loaded.'); });
+      hls = h;
+    });
+    return () => { cancelled = true; hls?.destroy(); };
+  }, [src]);
+
   // Compact layout on small players.
   useEffect(() => {
     const el = wrap.current;
@@ -151,7 +174,6 @@ export function VideoPlayer({
       {src ? (
         <video
           ref={video}
-          src={src}
           playsInline
           preload="metadata"
           onClick={toggle}

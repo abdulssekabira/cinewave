@@ -515,3 +515,7 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .a-rowlist li { display: flex; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 8px; background: var(--surface); font-size: 14px; flex-wrap: wrap; }
 .a-rowlist a:hover { text-decoration: underline; }
 .a-num { width: 22px; text-align: center; color: var(--text-faint); font-size: 12px; font-weight: 700; }
+
+/* Video upload progress */
+.a-progress { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; margin-bottom: 8px; }
+.a-progress > div { height: 100%; background: var(--accent); transition: width .3s; }
