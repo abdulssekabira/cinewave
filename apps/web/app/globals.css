@@ -81,10 +81,10 @@ button, input, select { font: inherit; color: inherit; }
   .nav::-webkit-scrollbar { display: none; }
   .nav a.hide-sm { display: none; }
   .wordmark { font-size: 26px; }
+  .header-actions { gap: 6px; }
 }
 @media (max-width: 400px) {
   .wordmark { font-size: 23px; }
-  .header-actions { gap: 6px; }
 }
 
 /* ================= Buttons ================= */
