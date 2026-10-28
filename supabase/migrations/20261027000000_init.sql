@@ -7,8 +7,8 @@
 -- The apps only display what these rules allow.
 -- =====================================================================
 
-create extension if not exists pgcrypto;
-create extension if not exists pg_trgm;
+create schema if not exists extensions;
+create extension if not exists pg_trgm with schema extensions;
 
 -- ---------------------------------------------------------------------
 -- Enums
@@ -193,7 +193,7 @@ create table public.titles (
   updated_at       timestamptz not null default now()
 );
 create index titles_status_idx on public.titles (status);
-create index titles_title_trgm on public.titles using gin (title gin_trgm_ops);
+create index titles_title_trgm on public.titles using gin (title extensions.gin_trgm_ops);
 create trigger titles_updated before update on public.titles
   for each row execute function public.set_updated_at();
 

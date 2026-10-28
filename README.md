@@ -76,7 +76,10 @@ The seed data includes deliberate test cases: a **draft** title and an **expired
    2. `supabase/migrations/20261027000100_storage.sql`
    3. `supabase/migrations/20261027000200_ratings.sql`
    4. `supabase/migrations/20261028000000_admin_uganda.sql`
-   5. `supabase/seed.sql`
+   5. `supabase/migrations/20261028000100_security_hardening.sql`
+   6. `supabase/seed.sql`
+
+   > The live CineWave project (`bugmkghovzdgncspjvwy`, Frankfurt) already has all of these applied.
 3. **Authentication → URL Configuration**
    - Site URL: `http://localhost:3000`
    - Redirect URLs: add `http://localhost:3000/auth/confirm`
