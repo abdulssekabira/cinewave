@@ -33,6 +33,7 @@ export function VideoPlayer({
   const video = useRef<HTMLVideoElement>(null);
   const seekRef = useRef<HTMLDivElement>(null);
   const lastSaved = useRef(0);
+  const ready = useRef<Promise<void> | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -55,7 +56,7 @@ export function VideoPlayer({
 
   const flash = (msg: string) => {
     setToast(msg);
-    window.setTimeout(() => setToast(null), 3200);
+    window.setTimeout(() => setToast(null), 6000);
   };
 
   const toggle = useCallback(() => {
@@ -64,8 +65,14 @@ export function VideoPlayer({
       flash('This film’s video hasn’t been uploaded yet. Check back soon.');
       return;
     }
-    if (v.paused) v.play().catch(() => flash('Playback failed. Check your connection and try again.'));
-    else v.pause();
+    if (v.paused) {
+      Promise.resolve(ready.current)
+        .then(() => v.play())
+        .catch((e: unknown) => {
+          if (e instanceof DOMException && e.name === 'AbortError') return;
+          flash(`Playback failed${e instanceof Error && e.name ? ` (${e.name})` : ''}. Check your connection and try again.`);
+        });
+    } else v.pause();
   }, [src]);
 
   const seekTo = (clientX: number) => {
@@ -122,25 +129,29 @@ export function VideoPlayer({
     return () => window.removeEventListener('keydown', onKey);
   }, [toggle, src]);
 
-  // Attach the stream: Safari/Android play HLS natively, others use hls.js.
+  // Attach the stream. hls.js wherever the browser supports it (Android,
+  // desktop); native HLS on iPhone/Safari where hls.js isn't available.
   useEffect(() => {
     const v = video.current;
     if (!v || !src) return;
-    if (!src.includes('.m3u8') || v.canPlayType('application/vnd.apple.mpegurl')) {
-      v.src = src;
-      return () => { v.removeAttribute('src'); v.load(); };
-    }
     let hls: { destroy(): void } | null = null;
     let cancelled = false;
-    import('hls.js').then(({ default: Hls }) => {
+    ready.current = import('hls.js').then(({ default: Hls }) => {
       if (cancelled) return;
-      if (!Hls.isSupported()) { v.src = src; return; }
+      if (!src.includes('.m3u8') || !Hls.isSupported()) {
+        v.src = src;
+        return;
+      }
       const h = new Hls({ capLevelToPlayerSize: true });
+      h.on(Hls.Events.ERROR, (_e, d) => {
+        if (!d.fatal) return;
+        const code = d.response?.code ? ` (${d.response.code})` : '';
+        flash(`This video could not be loaded: ${d.details}${code}`);
+      });
       h.loadSource(src);
       h.attachMedia(v);
-      h.on(Hls.Events.ERROR, (_e, d) => { if (d.fatal) flash('This video could not be loaded.'); });
       hls = h;
-    });
+    }).catch(() => { if (!cancelled) v.src = src; });
     return () => { cancelled = true; hls?.destroy(); };
   }, [src]);
 
@@ -184,7 +195,7 @@ export function VideoPlayer({
             setDuration(e.currentTarget.duration);
             if (startAt) e.currentTarget.currentTime = startAt;
           }}
-          onError={() => flash('This video could not be loaded.')}
+          onError={(e) => flash(`This video could not be loaded (code ${e.currentTarget.error?.code ?? '?'}).`)}
         />
       ) : null}
       {(!src || !playing) && (
