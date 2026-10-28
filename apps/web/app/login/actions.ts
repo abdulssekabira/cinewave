@@ -46,7 +46,10 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
       data: { display_name: String(form.get('name') ?? '').trim() || undefined },
     },
   });
-  if (error) return { error: error.message };
+  if (error) {
+    if (/rate limit/i.test(error.message)) return { error: 'Too many sign-up emails were sent in the last hour. Please try again in an hour.' };
+    return { error: error.message };
+  }
   if (!data.session) return { message: 'Check your email to confirm your account, then sign in.' };
   revalidatePath('/', 'layout');
   redirect('/');
