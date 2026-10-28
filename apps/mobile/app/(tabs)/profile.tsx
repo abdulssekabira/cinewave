@@ -44,14 +44,14 @@ export default function Profile() {
               <Text style={styles.avatarText}>{(data.name ?? session.user.email ?? '?')[0]?.toUpperCase()}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{data.name ?? 'CineWave member'}</Text>
+              <Text style={styles.name}>{data.name ?? 'GLE Movies member'}</Text>
               <Text style={styles.email}>{session.user.email}</Text>
             </View>
             <View style={styles.planPill}><Text style={styles.planPillText}>{PLAN_LABEL[current]}</Text></View>
           </View>
         ) : (
           <View style={[styles.card, { flexDirection: 'column', alignItems: 'stretch' }]}>
-            <Text style={styles.name}>Sign in to CineWave</Text>
+            <Text style={styles.name}>Sign in to GLE Movies</Text>
             <Text style={[styles.email, { marginBottom: 14 }]}>Sync your watchlist and progress across devices.</Text>
             <Button label="Sign in" onPress={() => router.push('/login')} />
           </View>

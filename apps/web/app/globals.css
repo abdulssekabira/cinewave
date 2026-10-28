@@ -53,8 +53,9 @@ button, input, select { font: inherit; color: inherit; }
 .site-header.scrolled { background-color: rgba(11, 11, 13, 0.96); }
 .wordmark {
   font-family: var(--font-display); font-size: 30px; line-height: 1;
-  letter-spacing: 0.02em; color: var(--accent); padding-top: 3px;
+  letter-spacing: 0.02em; color: var(--accent); padding-top: 3px; white-space: nowrap;
 }
+.wordmark span { color: var(--text); margin-left: 0.18em; }
 .nav { display: flex; gap: 22px; flex: 1; }
 .nav a { color: #e5e5e5; font-size: 14px; font-weight: 500; transition: color .15s; }
 .nav a:hover { color: var(--text-muted); }
@@ -80,6 +81,9 @@ button, input, select { font: inherit; color: inherit; }
   .nav::-webkit-scrollbar { display: none; }
   .nav a.hide-sm { display: none; }
   .wordmark { font-size: 26px; }
+}
+@media (max-width: 400px) {
+  .wordmark { font-size: 23px; }
   .header-actions { gap: 6px; }
 }
 

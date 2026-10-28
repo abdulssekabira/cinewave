@@ -6,7 +6,7 @@ import '@fontsource-variable/inter';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'CineWave', template: '%s · CineWave' },
+  title: { default: 'GLE Movies', template: '%s · GLE Movies' },
   description: 'Stream films in Uganda and beyond. Watch free with ads, or subscribe with mobile money or card.',
 };
 
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main>{children}</main>
         <footer className="site-footer">
-          <span>© {new Date().getFullYear()} CineWave</span>
+          <span>© {new Date().getFullYear()} GLE Movies · by Gamers Loft Entertainment</span>
           <Link href="/plans">Plans</Link>
           <span>Terms</span>
           <span>Privacy</span>

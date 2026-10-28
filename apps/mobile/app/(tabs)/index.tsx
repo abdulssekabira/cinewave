@@ -48,7 +48,7 @@ export default function Home() {
       >
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.hello}>{name ? `Welcome back ${name} 👋` : 'Welcome to CineWave 👋'}</Text>
+            <Text style={styles.hello}>{name ? `Welcome back ${name} 👋` : 'Welcome to GLE Movies 👋'}</Text>
             <Text style={styles.ask}>Any movie to watch?</Text>
           </View>
           <Pressable onPress={() => router.push('/search')} accessibilityRole="button" accessibilityLabel="Search" hitSlop={10}>

@@ -8,7 +8,7 @@ export async function Header() {
   const staff = user ? Boolean((await sb.rpc('is_staff')).data) : false;
   return (
     <HeaderShell>
-      <Link href="/" className="wordmark" aria-label="CineWave home">CINEWAVE</Link>
+      <Link href="/" className="wordmark" aria-label="GLE Movies home">GLE<span>MOVIES</span></Link>
       <NavLinks signedIn={Boolean(user)} />
       <div className="header-actions">
         <Link href="/search" className="icon-btn" aria-label="Search">

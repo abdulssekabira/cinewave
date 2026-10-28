@@ -58,7 +58,7 @@ export async function saveTitle(_: FormState, form: FormData): Promise<FormState
     if (!Number.isFinite(rating) || rating < 0 || rating > 10) return { error: 'Rating must be between 0 and 10.' };
   }
   const ratingSource = optText(form, 'rating_source');
-  if (rating !== null && !ratingSource) return { error: 'Say where the rating comes from (for example “CineWave viewers”).' };
+  if (rating !== null && !ratingSource) return { error: 'Say where the rating comes from (for example “GLE Movies viewers”).' };
 
   const plan = text(form, 'required_plan');
   const status = text(form, 'status');

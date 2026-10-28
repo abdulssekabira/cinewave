@@ -133,7 +133,7 @@ export default function TitleScreen() {
         <IconCircle
           icon="share-social-outline"
           label="Share"
-          onPress={() => Share.share({ message: `Watch ${title.title} on CineWave` }).catch(() => {})}
+          onPress={() => Share.share({ message: `Watch ${title.title} on GLE Movies` }).catch(() => {})}
         />
       </View>
 

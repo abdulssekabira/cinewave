@@ -143,7 +143,7 @@ export function TitleForm({ title, genres, selectedGenres }: { title: AdminTitle
               </div>
               <div className="a-field">
                 <label htmlFor="f-rsrc">Source</label>
-                <input id="f-rsrc" name="rating_source" className="input" defaultValue={t?.rating_source ?? ''} placeholder="CineWave viewers" />
+                <input id="f-rsrc" name="rating_source" className="input" defaultValue={t?.rating_source ?? ''} placeholder="GLE Movies viewers" />
               </div>
             </div>
             <small className="a-hint">Leave empty if you don’t have a real rating. Never copy scores you aren’t licensed to show.</small>

@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "CineWave",
-    "slug": "cinewave",
-    "scheme": "cinewave",
+    "name": "GLE Movies",
+    "slug": "gle-movies",
+    "scheme": "glemovies",
     "version": "0.1.0",
     "orientation": "default",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0a0b0f",
     "android": {
-      "package": "com.cinewave.app",
+      "package": "com.gamersloft.glemovies",
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#0a0b0f"

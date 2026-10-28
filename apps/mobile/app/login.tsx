@@ -42,7 +42,7 @@ export default function Login() {
   return (
     <KeyboardAvoidingView behavior="height" style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={styles.wrap} keyboardShouldPersistTaps="handled">
-        <Text style={styles.brand}>CINE<Text style={{ color: colors.accent }}>WAVE</Text></Text>
+        <Text style={styles.brand}><Text style={{ color: colors.accent }}>GLE</Text> MOVIES</Text>
         <Text style={styles.h1}>{mode === 'signin' ? 'Welcome back' : 'Create your account'}</Text>
         <Text style={styles.sub}>
           {mode === 'signin' ? 'Sign in to sync your watchlist and progress.' : 'Free to join. Watch free films with ads.'}

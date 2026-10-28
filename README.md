@@ -1,4 +1,6 @@
-# CineWave
+# GLE Movies (project code name: CineWave)
+
+By **Gamers Loft Entertainment**. Code folders and packages keep the `cinewave` name; everything viewers see says **GLE Movies**.
 
 Movie streaming platform built for Uganda (open to viewers worldwide) — website + Android app on one shared backend.
 Prices in UGX; payments planned via MTN MoMo, Airtel Money and cards.
