@@ -524,3 +524,7 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .a-progress { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; margin-bottom: 8px; }
 .a-progress > div { height: 100%; background: var(--accent); transition: width .3s; }
 .a-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 18px; align-items: start; }
+.period-opt { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); cursor: pointer; }
+.period-opt.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.period-opt input { accent-color: var(--accent); width: 18px; height: 18px; }
+.period-opt span { flex: 1; }

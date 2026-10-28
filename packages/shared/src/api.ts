@@ -166,6 +166,7 @@ export async function getActiveSubscription(sb: SupabaseClient): Promise<Subscri
     .from('subscriptions')
     .select('*')
     .in('status', ['trialing', 'active', 'past_due'])
+    .or(`current_period_end.is.null,current_period_end.gt.${new Date().toISOString()}`)
     .order('current_period_end', { ascending: false, nullsFirst: true })
     .limit(1)
     .maybeSingle();

@@ -67,7 +67,7 @@ export interface Subscription {
   id: string;
   plan_id: PlanId;
   status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired' | 'refunded';
-  provider: 'stripe' | 'google_play' | 'manual';
+  provider: 'stripe' | 'google_play' | 'manual' | 'pesapal';
   current_period_end: string | null;
   cancel_at_period_end: boolean;
 }

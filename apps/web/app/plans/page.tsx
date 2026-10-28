@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { formatPrice, getPlans, type Plan } from '@cinewave/shared';
 import { getUser } from '@/lib/supabase/server';
 
@@ -46,12 +47,16 @@ export default async function PlansPage() {
             )}
             <ul>{features(p).map((f) => <li key={f}>{f}</li>)}</ul>
             <div style={{ marginTop: 'auto' }}>
-              {current === p.id ? (
-                <button className="btn btn-gray" disabled style={{ width: '100%' }}>Current plan</button>
-              ) : p.id === 'free' ? null : (
-                <button className="btn btn-accent" disabled style={{ width: '100%' }} title="Checkout arrives in Phase 4">
-                  Subscribe — coming soon
-                </button>
+              {p.id === 'free' ? (
+                current === 'free' ? <button className="btn btn-gray" disabled style={{ width: '100%' }}>Current plan</button> : null
+              ) : (
+                <Link
+                  href={user ? `/checkout/${p.id}` : `/login?next=/checkout/${p.id}`}
+                  className={`btn ${current === p.id ? 'btn-gray' : 'btn-accent'}`}
+                  style={{ width: '100%' }}
+                >
+                  {current === p.id ? 'Current plan · add more time' : 'Subscribe'}
+                </Link>
               )}
             </div>
           </article>

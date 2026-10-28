@@ -39,7 +39,7 @@ export default async function AccountPage() {
               <dd style={{ textTransform: 'capitalize' }}>{sub.status.replace('_', ' ')}</dd>
               {renews && (
                 <>
-                  <dt>{sub.cancel_at_period_end ? 'Ends on' : 'Renews on'}</dt>
+                  <dt>{sub.cancel_at_period_end || sub.provider === 'pesapal' || sub.provider === 'manual' ? 'Active until' : 'Renews on'}</dt>
                   <dd>{renews}</dd>
                 </>
               )}
@@ -47,7 +47,7 @@ export default async function AccountPage() {
           )}
         </dl>
         <Link href="/plans" className="btn btn-gray btn-small" style={{ marginTop: 16 }}>
-          {sub ? 'Change plan' : 'See plans'}
+          {sub ? 'Add time or change plan' : 'See plans'}
         </Link>
       </section>
 
