@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: Props) {
       <div>
         {sp.error && (
           <div className="form-msg error" style={{ maxWidth: 400 }}>
-            That link is invalid or has expired. Please try again.
+            If you just confirmed your email, you&apos;re all set: sign in below. If you were resetting your password, request a new link.
           </div>
         )}
         <AuthForm mode={mode} next={next} />
