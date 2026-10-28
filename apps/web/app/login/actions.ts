@@ -2,7 +2,17 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+
+/** The address this site is being viewed on (works on localhost, Vercel and a custom domain). */
+async function siteOrigin() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '');
+  const h = await headers();
+  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
+  const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
+  return `${proto}://${host}`;
+}
 
 export type AuthState = { error?: string; message?: string };
 
@@ -32,7 +42,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/auth/confirm`,
+      emailRedirectTo: `${await siteOrigin()}/auth/confirm`,
       data: { display_name: String(form.get('name') ?? '').trim() || undefined },
     },
   });
@@ -45,7 +55,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
 export async function requestPasswordReset(_: AuthState, form: FormData): Promise<AuthState> {
   const sb = await createClient();
   await sb.auth.resetPasswordForEmail(String(form.get('email') ?? '').trim(), {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/auth/confirm?next=/account/password`,
+    redirectTo: `${await siteOrigin()}/auth/confirm?next=/account/password`,
   });
   // Same message either way, so the form can't be used to discover accounts.
   return { message: 'If that email has an account, a reset link is on its way.' };
