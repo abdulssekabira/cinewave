@@ -3,13 +3,19 @@
 -- your partners' real films and contract references before launch.
 -- =====================================================================
 
+-- Prices in Uganda shillings (UGX has no cents: 10000 = UGX 10,000).
+-- PLACEHOLDER PRICES — set your real prices before launch.
 insert into public.plans
-  (id, name, rank, price_cents, annual_price_cents, currency, shows_ads, max_quality, downloads_allowed, max_streams)
+  (id, name, rank, price_cents, weekly_price_cents, annual_price_cents, currency, shows_ads, max_quality, downloads_allowed, max_streams)
 values
-  ('free',     'Free',     0,    0, null,  'USD', true,  '720p',  false, 1),
-  ('standard', 'Standard', 1,  499, 4990,  'USD', false, '1080p', false, 2),
-  ('premium',  'Premium',  2,  999, 9990,  'USD', false, '1080p', true,  4)
-on conflict (id) do nothing;
+  ('free',     'Free',     0,     0,    null, null, 'UGX', true,  '720p',  false, 1),
+  ('standard', 'Standard', 1, 10000,    3000, null, 'UGX', false, '1080p', false, 2),
+  ('premium',  'Premium',  2, 18000,    5000, null, 'UGX', false, '1080p', true,  4)
+on conflict (id) do update set
+  name = excluded.name, rank = excluded.rank, price_cents = excluded.price_cents,
+  weekly_price_cents = excluded.weekly_price_cents, annual_price_cents = excluded.annual_price_cents,
+  currency = excluded.currency, shows_ads = excluded.shows_ads, max_quality = excluded.max_quality,
+  downloads_allowed = excluded.downloads_allowed, max_streams = excluded.max_streams;
 
 insert into public.genres (slug, name) values
   ('action', 'Action'), ('drama', 'Drama'), ('comedy', 'Comedy'),

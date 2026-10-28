@@ -33,9 +33,11 @@ export default async function PlansPage() {
               {formatPrice(p.price_cents, p.currency)}
               {p.price_cents > 0 && <small> / month</small>}
             </div>
-            {p.annual_price_cents && (
+            {Boolean(p.weekly_price_cents || p.annual_price_cents) && (
               <div style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: -8 }}>
-                or {formatPrice(p.annual_price_cents, p.currency)} / year
+                {p.weekly_price_cents ? <>or {formatPrice(p.weekly_price_cents, p.currency)} / week</> : null}
+                {p.weekly_price_cents && p.annual_price_cents ? ' · ' : null}
+                {p.annual_price_cents ? <>{formatPrice(p.annual_price_cents, p.currency)} / year</> : null}
               </div>
             )}
             <ul>{features(p).map((f) => <li key={f}>{f}</li>)}</ul>
@@ -52,7 +54,7 @@ export default async function PlansPage() {
         ))}
       </div>
       <p style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 20 }}>
-        Prices are placeholders. Taxes, regional pricing and trial terms will be confirmed before launch.
+        Pay with MTN Mobile Money, Airtel Money or Visa/Mastercard. Prices are placeholders and will be confirmed before launch.
       </p>
     </div>
   );

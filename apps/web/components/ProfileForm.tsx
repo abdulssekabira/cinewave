@@ -21,7 +21,7 @@ export function ProfileForm({ name, country }: { name: string; country: string }
           className="input"
           defaultValue={country}
           maxLength={2}
-          placeholder="AE"
+          placeholder="UG"
           style={{ textTransform: 'uppercase', maxWidth: 120 }}
         />
       </div>

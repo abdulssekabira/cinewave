@@ -4,7 +4,8 @@ import { HeaderShell, NavLinks } from './HeaderShell';
 import { SearchIcon, UserIcon } from './Icons';
 
 export async function Header() {
-  const { user } = await getUser();
+  const { sb, user } = await getUser();
+  const staff = user ? Boolean((await sb.rpc('is_staff')).data) : false;
   return (
     <HeaderShell>
       <Link href="/" className="wordmark" aria-label="CineWave home">CINEWAVE</Link>
@@ -13,6 +14,7 @@ export async function Header() {
         <Link href="/search" className="icon-btn" aria-label="Search">
           <SearchIcon size={20} />
         </Link>
+        {staff && <Link href="/admin" className="admin-link">Admin</Link>}
         {user ? (
           <Link href="/account" className="avatar" aria-label="Account">
             <UserIcon size={18} />

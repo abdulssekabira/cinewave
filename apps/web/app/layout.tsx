@@ -7,7 +7,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: { default: 'CineWave', template: '%s · CineWave' },
-  description: 'Stream films from independent studios and partners. Free with ads, or subscribe.',
+  description: 'Stream films in Uganda and beyond. Watch free with ads, or subscribe with mobile money or card.',
 };
 
 export const viewport: Viewport = {

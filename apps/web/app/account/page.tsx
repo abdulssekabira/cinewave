@@ -11,7 +11,11 @@ export const metadata: Metadata = { title: 'Account' };
 export default async function AccountPage() {
   const { sb, user } = await getUser();
   if (!user) redirect('/login?next=/account');
-  const [profile, sub] = await Promise.all([getProfile(sb, user.id), getActiveSubscription(sb)]);
+  const [profile, sub, staff] = await Promise.all([
+    getProfile(sb, user.id),
+    getActiveSubscription(sb),
+    sb.rpc('is_staff').then((r) => Boolean(r.data)),
+  ]);
 
   const renews = sub?.current_period_end
     ? new Date(sub.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -20,6 +24,9 @@ export default async function AccountPage() {
   return (
     <div className="page">
       <h1 className="page-title">Account</h1>
+      {staff && (
+        <Link href="/admin" className="btn btn-accent btn-small" style={{ marginBottom: 20 }}>Open admin dashboard</Link>
+      )}
 
       <section className="panel">
         <h2>Membership</h2>

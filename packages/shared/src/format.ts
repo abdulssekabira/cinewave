@@ -13,9 +13,15 @@ export function formatRuntime(minutes: number | null | undefined): string {
   return h ? `${h}h ${m}m` : `${m}m`;
 }
 
-export function formatPrice(cents: number, currency = 'USD'): string {
-  if (cents === 0) return 'Free';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
+/**
+ * Formats a price stored in the currency's smallest unit.
+ * UGX has no minor unit, so formatPrice(15000, 'UGX') → "UGX 15,000".
+ */
+export function formatPrice(amount: number, currency = 'UGX'): string {
+  if (amount === 0) return 'Free';
+  const nf = new Intl.NumberFormat('en', { style: 'currency', currency, currencyDisplay: 'code' });
+  const digits = nf.resolvedOptions().maximumFractionDigits ?? 2;
+  return nf.format(amount / 10 ** digits).replace(/\u00a0/g, ' ');
 }
 
 export function genreLabel(slug: string): string {

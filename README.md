@@ -1,6 +1,7 @@
 # CineWave
 
-Movie streaming platform — website + Android app on one shared backend.
+Movie streaming platform built for Uganda (open to viewers worldwide) — website + Android app on one shared backend.
+Prices in UGX; payments planned via MTN MoMo, Airtel Money and cards.
 
 ```
 cinewave/
@@ -39,12 +40,12 @@ Posters without a wide backdrop are shown as blurred fill + sharp key art on the
 | Sign up, sign in, sign out, email confirmation, password reset | ✅ | ✅ (no reset yet) |
 | My List (watchlist), synced across devices | ✅ | ✅ |
 | Account: plan status, profile, country | ✅ | ✅ (plan status) |
-| Plans page (prices from database) | ✅ | ✅ |
+| Plans page (UGX, weekly and monthly, from database) | ✅ | ✅ |
 | Play / Download buttons decided by server-side entitlement | ✅ | ✅ |
 | Video playback | Phase 3 | Phase 3 |
 | Checkout / Google Play billing | Phase 4 | Phase 4 |
 | Offline downloads | — | Phase 5 |
-| Admin dashboard | Next | — |
+| Admin dashboard (`/admin`) | ✅ | — |
 
 ## How access is decided
 
@@ -74,7 +75,8 @@ The seed data includes deliberate test cases: a **draft** title and an **expired
    1. `supabase/migrations/20261027000000_init.sql`
    2. `supabase/migrations/20261027000100_storage.sql`
    3. `supabase/migrations/20261027000200_ratings.sql`
-   4. `supabase/seed.sql`
+   4. `supabase/migrations/20261028000000_admin_uganda.sql`
+   5. `supabase/seed.sql`
 3. **Authentication → URL Configuration**
    - Site URL: `http://localhost:3000`
    - Redirect URLs: add `http://localhost:3000/auth/confirm`
@@ -99,19 +101,28 @@ npm run android                              # opens in the emulator
 ```
 
 ### 5. Make yourself an admin
-Sign up on the website, then run in the SQL Editor:
+Sign up on the website, then run this once in the SQL Editor:
 ```sql
 insert into public.user_roles (user_id, role)
 select id, 'admin' from auth.users where email = 'YOUR@EMAIL.COM';
 ```
+Refresh the site — an **Admin** button appears in the header (on phones: Account → Open admin dashboard).
+For staff who should manage films but not rights, partners or users, use role `'editor'` instead.
 
-### 6. Test a paid plan without payments
-```sql
-insert into public.subscriptions (user_id, plan_id, status, provider, current_period_end)
-select id, 'premium', 'active', 'manual', now() + interval '30 days'
-from auth.users where email = 'YOUR@EMAIL.COM';
-```
-Premium titles will now show **Play**, and download-eligible titles show **Download** on Android.
+## Admin dashboard (`/admin`)
+
+| Page | What you do there |
+|---|---|
+| **Overview** | Films live, drafts, users, active subscriptions; films hidden for lack of rights; licences ending within 30 days; recent changes |
+| **Films** | Add and edit films: details, genres, cast & crew, languages (en, lg, sw…), age rating, who can watch (Free/Standard/Premium), featured in hero, poster + backdrop upload, rating with source |
+| **Film → Rights windows** | Add an agreement: partner, contract ref, Worldwide or listed countries, start/end dates, ads, downloads + expiry. “End now” keeps history |
+| **Home rows** | Create curated rows (e.g. “Made in Uganda”), add/reorder films, hide or reorder rows |
+| **Partners** | Studios and rights holders, with active-agreement counts |
+| **Users** | Search users, see plan and country, give a complimentary Standard/Premium plan for 7–365 days, end it |
+
+How to publish a film: **Films → Add film** → fill in, set status **Published** → **Create film** → add a **rights window**. The badge turns **Live** and it appears on the website and app.
+
+Editors can do everything except rights, partners and users (enforced in the database, not just hidden in the UI).
 
 ---
 
@@ -125,6 +136,7 @@ Premium titles will now show **Play**, and download-eligible titles show **Downl
 
 ## Next steps
 
-1. **Admin dashboard** (web): titles, artwork upload, rights windows, featured rows.
+1. **Set real prices** (UGX weekly/monthly) — the seed prices are placeholders.
 2. **Pick the video provider** (Mux, Cloudflare Stream or Bitmovin). Confirm whether partners require DRM.
-3. **Phase 3 playback**: signed playback tokens issued only when `playback_entitlement` says `ok`, plus progress saving (`saveProgress` is already in `packages/shared`).
+3. **Phase 3 playback**: signed playback tokens issued only when `playback_entitlement` says `ok`, plus progress saving (`saveProgress` is already in `packages/shared`). Add video upload to the film editor and a data-saver quality option.
+4. **Payments (Phase 4)**: Flutterwave or Pesapal for MTN MoMo, Airtel Money and cards on the website; decide how the Android app handles Google Play billing.

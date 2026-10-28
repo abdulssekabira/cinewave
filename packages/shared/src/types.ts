@@ -38,6 +38,7 @@ export interface Plan {
   name: string;
   rank: number;
   price_cents: number;
+  weekly_price_cents: number | null;
   annual_price_cents: number | null;
   currency: string;
   shows_ads: boolean;

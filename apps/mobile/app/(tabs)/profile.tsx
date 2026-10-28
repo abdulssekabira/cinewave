@@ -66,6 +66,9 @@ export default function Profile() {
                 {p.shows_ads ? 'With ads' : 'No ads'} · {p.max_quality}
                 {p.downloads_allowed ? ' · Downloads' : ''}
               </Text>
+              {p.weekly_price_cents ? (
+                <Text style={styles.planText}>or {formatPrice(p.weekly_price_cents, p.currency)} / week</Text>
+              ) : null}
             </View>
             <Text style={styles.price}>
               {formatPrice(p.price_cents, p.currency)}
@@ -73,7 +76,7 @@ export default function Profile() {
             </Text>
           </View>
         ))}
-        <Text style={styles.note}>Subscriptions through Google Play arrive in a later update.</Text>
+        <Text style={styles.note}>Pay with MTN MoMo, Airtel Money or card — arriving in a later update.</Text>
 
         {session && (
           <View style={styles.menu}>

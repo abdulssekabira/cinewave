@@ -9,7 +9,7 @@ export async function updateProfile(_: ProfileState, form: FormData): Promise<Pr
   const { sb, user } = await getUser();
   if (!user) return { error: 'Please sign in again.' };
   const country = String(form.get('country') ?? '').trim().toUpperCase();
-  if (country && !/^[A-Z]{2}$/.test(country)) return { error: 'Use a 2-letter country code, e.g. AE or UG.' };
+  if (country && !/^[A-Z]{2}$/.test(country)) return { error: 'Use a 2-letter country code, e.g. UG or KE.' };
 
   const { error } = await sb
     .from('profiles')
