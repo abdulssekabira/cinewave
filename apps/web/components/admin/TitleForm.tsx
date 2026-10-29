@@ -6,7 +6,8 @@ import { saveTitle, type FormState } from '@/app/admin/titles/actions';
 import type { AdminTitle } from '@/lib/admin';
 import { ImageUpload } from './ImageUpload';
 
-export function TitleForm({ title, genres, selectedGenres, vjs }: { title: AdminTitle | null; genres: Genre[]; selectedGenres: string[]; vjs: Vj[] }) {
+export function TitleForm({ title, genres, selectedGenres, vjs, canPublish = true }: { title: AdminTitle | null; genres: Genre[]; selectedGenres: string[]; vjs: Vj[]; canPublish?: boolean }) {
+  const locked = !canPublish && Boolean(title && title.status !== 'draft');
   const [state, action, pending] = useActionState<FormState, FormData>(saveTitle, {});
   const t = title;
   const credits = (t?.credits ?? []).map((c) => `${c.name}, ${c.role}`).join('\n');
@@ -118,12 +119,25 @@ export function TitleForm({ title, genres, selectedGenres, vjs }: { title: Admin
             <h2>Publishing</h2>
             <div className="a-field">
               <label htmlFor="f-status">Status</label>
-              <select id="f-status" name="status" className="select" defaultValue={t?.status ?? 'draft'}>
-                <option value="draft">Draft — hidden</option>
-                <option value="published">Published</option>
-                <option value="archived">Archived — removed</option>
-              </select>
-              <small className="a-hint">Published films appear only while they have an active rights window.</small>
+              {canPublish ? (
+                <select id="f-status" name="status" className="select" defaultValue={t?.status ?? 'draft'}>
+                  <option value="draft">Draft — hidden</option>
+                  <option value="published">Published</option>
+                  <option value="archived">Archived — removed</option>
+                </select>
+              ) : (
+                <>
+                  <input type="hidden" name="status" value={t?.status ?? 'draft'} />
+                  <p id="f-status" style={{ margin: '4px 0' }}>
+                    <span className={`a-badge ${t && t.status !== 'draft' ? 'ok' : 'muted'}`}>{t && t.status !== 'draft' ? 'Live' : 'Draft — waiting for the owner'}</span>
+                  </p>
+                </>
+              )}
+              <small className="a-hint">
+                {canPublish
+                  ? 'Published films appear only while they have an active rights window.'
+                  : 'You save films as drafts. The owner checks them and publishes them.'}
+              </small>
             </div>
             <div className="a-field">
               <label htmlFor="f-plan">Who can watch</label>
@@ -172,7 +186,11 @@ export function TitleForm({ title, genres, selectedGenres, vjs }: { title: Admin
       </div>
 
       <div className="a-savebar">
-        <button className="btn btn-accent" disabled={pending}>{pending ? 'Saving…' : t ? 'Save changes' : 'Create film'}</button>
+        {locked ? (
+          <span className="a-muted">This film is live. Only the owner can change it.</span>
+        ) : (
+          <button className="btn btn-accent" disabled={pending}>{pending ? 'Saving…' : t ? 'Save changes' : 'Create film'}</button>
+        )}
       </div>
     </form>
   );

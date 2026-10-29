@@ -4,7 +4,7 @@ import { requireStaff } from '@/lib/admin';
 import { TitleForm } from '@/components/admin/TitleForm';
 
 export default async function NewTitle() {
-  const { sb } = await requireStaff();
+  const { sb, isAdmin } = await requireStaff();
   const [genres, vjs] = await Promise.all([getGenres(sb, true), getVjs(sb, true)]);
   return (
     <>
@@ -17,7 +17,7 @@ export default async function NewTitle() {
       <p className="a-muted" style={{ marginTop: -8, marginBottom: 20 }}>
         Save it as a draft first. After saving you can add the rights window that makes it visible.
       </p>
-      <TitleForm title={null} genres={genres} selectedGenres={[]} vjs={vjs} />
+      <TitleForm title={null} genres={genres} selectedGenres={[]} vjs={vjs} canPublish={isAdmin} />
     </>
   );
 }

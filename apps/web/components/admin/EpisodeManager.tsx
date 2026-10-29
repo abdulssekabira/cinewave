@@ -10,7 +10,7 @@ import { ImageUpload } from './ImageUpload';
 type Row = Episode & { video: VideoState };
 
 /** Parts of a series: add parts, upload each part's video, edit, hide, delete. */
-export function EpisodeManager({ titleId, episodes, connected }: { titleId: string; episodes: Row[]; connected: boolean }) {
+export function EpisodeManager({ titleId, episodes, connected, canPublish = true }: { titleId: string; episodes: Row[]; connected: boolean; canPublish?: boolean }) {
   const seasons = [...new Set(episodes.map((e) => e.season))];
   const multi = seasons.length > 1;
   const lastSeason = seasons.length ? Math.max(...seasons) : 1;
@@ -28,6 +28,7 @@ export function EpisodeManager({ titleId, episodes, connected }: { titleId: stri
               key={e.id}
               titleId={titleId}
               ep={e}
+              canPublish={canPublish}
               multi={multi}
               connected={connected}
               open={openId === e.id || state.id === e.id}
@@ -60,8 +61,9 @@ export function EpisodeManager({ titleId, episodes, connected }: { titleId: stri
 }
 
 function EpisodeRow({
-  titleId, ep, multi, connected, open, onToggle,
-}: { titleId: string; ep: Row; multi: boolean; connected: boolean; open: boolean; onToggle: () => void }) {
+  titleId, ep, multi, connected, open, onToggle, canPublish,
+}: { titleId: string; ep: Row; multi: boolean; connected: boolean; open: boolean; onToggle: () => void; canPublish: boolean }) {
+  const locked = !canPublish && ep.published;
   const [state, action, pending] = useActionState<EpState, FormData>(saveEpisode.bind(null, titleId, ep.id), {});
   const [confirming, setConfirming] = useState(false);
   const label = `${multi ? `S${ep.season} · ` : ''}Part ${ep.number}`;
@@ -75,11 +77,14 @@ function EpisodeRow({
         <span className="ep-num">{label}</span>
         <span className="ep-name">{ep.name ?? <span className="a-muted">No name</span>}</span>
         <span className={`a-badge ${tone}`}>{vLabel}</span>
-        {!ep.published && <span className="a-badge muted">Hidden</span>}
+        {!ep.published && <span className="a-badge muted">{canPublish ? 'Hidden' : 'Waiting for the owner'}</span>}
         <span aria-hidden="true" className="ep-chev">{open ? '▴' : '▾'}</span>
       </button>
 
-      {open && (
+      {open && locked && (
+        <div className="ep-body"><p className="a-muted">This part is live. Only the owner can change it.</p></div>
+      )}
+      {open && !locked && (
         <div className="ep-body">
           <section>
             <h3 className="ep-sub">Video</h3>
@@ -117,9 +122,13 @@ function EpisodeRow({
           </form>
 
           <div className="a-row" style={{ marginTop: 14 }}>
-            <button type="button" className="btn btn-gray btn-small" onClick={() => setEpisodePublished(titleId, ep.id, !ep.published)}>
-              {ep.published ? 'Hide from viewers' : 'Show to viewers'}
-            </button>
+            {canPublish ? (
+              <button type="button" className="btn btn-gray btn-small" onClick={() => setEpisodePublished(titleId, ep.id, !ep.published)}>
+                {ep.published ? 'Hide from viewers' : 'Show to viewers'}
+              </button>
+            ) : (
+              <span className="a-muted">The owner shows this part to viewers.</span>
+            )}
             {confirming ? (
               <button type="button" className="btn btn-accent btn-small" onClick={() => deleteEpisode(titleId, ep.id)}>Tap again to delete {label}</button>
             ) : (

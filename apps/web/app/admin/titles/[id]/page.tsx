@@ -84,7 +84,7 @@ export default async function EditTitle({ params, searchParams }: Props) {
         <div className="form-msg error">This film is published but viewers can’t see it yet — add an active rights window below.</div>
       )}
 
-      <TitleForm title={title} genres={genres} selectedGenres={selected} vjs={vjs} />
+      <TitleForm title={title} genres={genres} selectedGenres={selected} vjs={vjs} canPublish={isAdmin} />
 
       <section className="a-card" style={{ marginTop: 24 }} id="rights">
         <h2>Rights windows</h2>
@@ -157,16 +157,18 @@ export default async function EditTitle({ params, searchParams }: Props) {
           <p className="a-muted" style={{ marginTop: -4 }}>
             Viewers see one poster for this series. Tapping it lists these parts in order, and each part plays its own video.
           </p>
-          <EpisodeManager titleId={title.id} episodes={episodeRows} connected={muxConfigured()} />
+          <EpisodeManager titleId={title.id} episodes={episodeRows} connected={muxConfigured()} canPublish={isAdmin} />
         </section>
       ) : (
         <section className="a-card" style={{ marginTop: 24 }} id="video">
           <h2>Video file</h2>
-          <VideoUpload
+          {!isAdmin && title.status !== 'draft' ? (
+            <p className="a-muted">This film is live. Only the owner can replace its video.</p>
+          ) : <VideoUpload
             titleId={title.id}
             connected={muxConfigured()}
             initial={media ? { status: media.status, duration: media.duration_seconds, error: media.error_text } : { status: 'none' }}
-          />
+          />}
         </section>
       )}
     </>
