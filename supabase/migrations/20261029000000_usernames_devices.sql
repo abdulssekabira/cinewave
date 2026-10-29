@@ -4,9 +4,12 @@
 
 -- ------------------------------------------------------------- usernames
 alter table public.profiles add column if not exists username text;
-alter table public.profiles drop constraint if exists profiles_username_format;
-alter table public.profiles add constraint profiles_username_format
-  check (username is null or username ~ '^[a-z0-9_.]{3,20}$');
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_username_format') then
+    alter table public.profiles add constraint profiles_username_format
+      check (username is null or username ~ '^[a-z0-9_.]{3,20}$');
+  end if;
+end $$;
 create unique index if not exists profiles_username_key on public.profiles (username);
 
 create or replace function public.valid_new_username(u text)
@@ -99,13 +102,14 @@ end $$;
 revoke execute on function public.device_allowed() from public, anon;
 grant execute on function public.device_allowed() to authenticated;
 
--- Sign a device out (ends that session everywhere it is used).
+-- Ends a device's session: it can no longer refresh, and it stops counting at once.
 create or replace function public.remove_device(p_session uuid)
 returns void
 language plpgsql security definer set search_path = public, auth as $$
 begin
   if auth.uid() is null then raise exception 'sign in first'; end if;
-  delete from auth.sessions where id = p_session and user_id = auth.uid();
+  update auth.sessions set not_after = now() where id = p_session and user_id = auth.uid();
+  update auth.refresh_tokens set revoked = true where session_id = p_session and user_id = auth.uid()::text;
 end $$;
 revoke execute on function public.remove_device(uuid) from public, anon;
 grant execute on function public.remove_device(uuid) to authenticated;
