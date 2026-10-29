@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getProfile, getTitleBySlug } from '@cinewave/shared';
 import { getUser, viewerCountry } from '@/lib/supabase/server';
@@ -27,6 +28,26 @@ export default async function WatchPage({ params, searchParams }: Props) {
   const country = await viewerCountry(profile?.country_code);
   const p = await resolvePlayback(sb, user, title, country, part);
   if (!p.ent.can_play || p.noParts) redirect(`/title/${slug}`);
+
+  // iPhones and iPads (Safari) can't play MKV files. Until the film's MP4 copy
+  // is ready, say so clearly instead of showing a player that never starts.
+  const ua = (await headers()).get('user-agent') ?? '';
+  const apple = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && /Safari/i.test(ua) && !/Chrome|CriOS|Firefox/i.test(ua));
+  const mkv = Boolean(p.src && /\.mkv(\?|$)/i.test(p.src));
+  if (apple && mkv) {
+    return (
+      <div className="player-page">
+        <div style={{ maxWidth: 640, margin: '40px auto', textAlign: 'center' }}>
+          <h1 style={{ fontSize: 22, marginBottom: 12 }}>{title.title}</h1>
+          <p className="muted" style={{ lineHeight: 1.6 }}>
+            This film is still being prepared for iPhone and iPad. It usually takes a short while.
+            You can already watch it on an Android phone or a computer.
+          </p>
+          <Link href={`/title/${slug}`} className="btn btn-gray" style={{ marginTop: 18 }}><BackIcon size={18} /> Back</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="player-page">
