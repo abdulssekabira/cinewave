@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <aside className="admin-side">
         <div className="admin-brand">
           Admin
-          <span>{isAdmin ? 'Administrator' : 'Editor'} · {user.email}</span>
+          <span>{isAdmin ? 'Administrator' : 'Uploader'} · {user.email}</span>
         </div>
         <AdminNav isAdmin={isAdmin} />
       </aside>

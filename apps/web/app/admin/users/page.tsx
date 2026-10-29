@@ -1,6 +1,6 @@
 import { PLAN_LABEL, type PlanId } from '@cinewave/shared';
 import { fmtDate, requireStaff } from '@/lib/admin';
-import { endComplimentary, grantComplimentary } from './actions';
+import { endComplimentary, grantComplimentary, setUploader } from './actions';
 
 type UserRow = {
   id: string;
@@ -44,14 +44,16 @@ export default async function Users({ searchParams }: Props) {
       ) : (
         <div className="a-table-wrap">
           <table className="a-table">
-            <thead><tr><th>User</th><th>Country</th><th>Plan</th><th>Joined</th><th>Complimentary access</th></tr></thead>
+            <thead><tr><th>User</th><th>Country</th><th>Plan</th><th>Joined</th><th>Complimentary access</th><th>Uploader</th></tr></thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.id}>
                   <td>
                     <b>{u.display_name ?? '—'}</b>
                     <small>{u.email}</small>
-                    {u.roles.length > 0 && <small><span className="a-badge ok">{u.roles.join(', ')}</span></small>}
+                    {u.roles.length > 0 && (
+                      <small><span className="a-badge ok">{u.roles.map((r) => (r === 'editor' ? 'uploader' : r)).join(', ')}</span></small>
+                    )}
                   </td>
                   <td>{u.country_code ?? '—'}</td>
                   <td><span className={`a-badge ${u.plan === 'free' ? 'muted' : 'ok'}`}>{PLAN_LABEL[u.plan]}</span></td>
@@ -77,6 +79,17 @@ export default async function Users({ searchParams }: Props) {
                           <option value="365">1 year</option>
                         </select>
                         <button className="btn btn-gray btn-small">Give</button>
+                      </form>
+                    )}
+                  </td>
+                  <td>
+                    {u.roles.includes('admin') ? (
+                      <span className="a-muted">Admin</span>
+                    ) : (
+                      <form action={setUploader.bind(null, u.id, !u.roles.includes('editor'))}>
+                        <button className={`btn btn-small ${u.roles.includes('editor') ? 'btn-gray' : 'btn-red'}`}>
+                          {u.roles.includes('editor') ? 'Remove uploader' : 'Make uploader'}
+                        </button>
                       </form>
                     )}
                   </td>

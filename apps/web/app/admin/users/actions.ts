@@ -31,3 +31,16 @@ export async function endComplimentary(subscriptionId: string) {
     .eq('provider', 'manual');
   revalidatePath('/admin/users');
 }
+
+/**
+ * Uploader (database role "editor"): can add films and series, upload videos,
+ * and manage VJs, genres and home rows. Can't see users, plans, payments,
+ * partners or change rights.
+ */
+export async function setUploader(userId: string, on: boolean) {
+  const { sb, isAdmin } = await requireStaff();
+  if (!isAdmin) return;
+  if (on) await sb.from('user_roles').upsert({ user_id: userId, role: 'editor' }, { onConflict: 'user_id,role', ignoreDuplicates: true });
+  else await sb.from('user_roles').delete().eq('user_id', userId).eq('role', 'editor');
+  revalidatePath('/admin/users');
+}
