@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const ROW_META: Record<string, { eyebrow: string; href?: string }> = {
   trending: { eyebrow: 'Trending', href: '/search' },
-  recent: { eyebrow: 'New', href: '/search?sort=newest' },
+  recent: { eyebrow: 'New', href: '/search' },
   free: { eyebrow: 'Free to watch', href: '/search?access=free' },
 };
 

@@ -115,7 +115,8 @@ export interface SearchParams {
   vj?: string;
   year?: number;
   access?: 'free' | 'premium';
-  sort?: 'popular' | 'newest' | 'az';
+  /** Default: latest added first. 'newest' = newest release year. */
+  sort?: 'latest' | 'popular' | 'newest' | 'az';
 }
 
 export async function searchTitles(sb: SupabaseClient, p: SearchParams): Promise<CatalogTitle[]> {
@@ -128,7 +129,8 @@ export async function searchTitles(sb: SupabaseClient, p: SearchParams): Promise
   if (p.access === 'premium') q = q.neq('required_plan', 'free');
   if (p.sort === 'newest') q = q.order('release_year', { ascending: false, nullsFirst: false });
   else if (p.sort === 'az') q = q.order('title');
-  else q = q.order('popularity', { ascending: false });
+  else if (p.sort === 'popular') q = q.order('popularity', { ascending: false });
+  else q = q.order('published_at', { ascending: false, nullsFirst: false }).order('title');
   const { data, error } = await q.limit(60);
   if (error) throw error;
   return data as CatalogTitle[];

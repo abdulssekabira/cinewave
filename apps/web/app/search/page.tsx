@@ -18,7 +18,7 @@ export default async function SearchPage({ searchParams }: Props) {
     vj: sp.vj || undefined,
     year: sp.year ? Number(sp.year) || undefined : undefined,
     access: sp.access === 'free' || sp.access === 'premium' ? sp.access : undefined,
-    sort: sp.sort === 'newest' || sp.sort === 'az' ? sp.sort : 'popular',
+    sort: sp.sort === 'newest' || sp.sort === 'az' || sp.sort === 'popular' ? sp.sort : 'latest',
   };
   const [results, genres, vjs, counts] = await Promise.all([
     searchTitles(sb, params),
@@ -80,10 +80,11 @@ export default async function SearchPage({ searchParams }: Props) {
             <FilterSheet
               param="sort"
               title="Sort by"
-              current={sp.sort === 'newest' || sp.sort === 'az' ? sp.sort : ''}
+              current={params.sort === 'latest' ? '' : params.sort!}
               options={[
-                { value: '', label: 'Most popular' },
-                { value: 'newest', label: 'Newest' },
+                { value: '', label: 'Latest added' },
+                { value: 'popular', label: 'Most popular' },
+                { value: 'newest', label: 'Newest release' },
                 { value: 'az', label: 'A–Z' },
               ]}
             />
