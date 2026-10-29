@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { refreshVideo, startVideoUpload, type VideoState } from '@/app/admin/titles/video-actions';
+import { uploadToR2 } from '@/lib/r2-upload';
 
 const LABEL: Record<VideoState['status'], string> = {
   none: 'No video yet',
@@ -16,7 +17,8 @@ const LABEL: Record<VideoState['status'], string> = {
  * (so a dropped connection only retries one piece), then watches Mux until
  * the video is ready.
  */
-export function VideoUpload({ titleId, episodeId, initial, connected, compact }: { titleId: string; episodeId?: string; initial: VideoState; connected: boolean; compact?: boolean }) {
+export function VideoUpload({ titleId, episodeId, initial, connected, compact, storage = 'mux' }: { titleId: string; episodeId?: string; initial: VideoState; connected: boolean; compact?: boolean; storage?: 'mux' | 'r2' }) {
+  const r2 = storage === 'r2';
   const [state, setState] = useState<VideoState>(initial);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact }:
   }, [titleId, episodeId]);
 
   useEffect(() => {
-    if (progress !== null) return;
+    if (progress !== null || r2) return;
     if (state.status !== 'pending' && state.status !== 'processing') return;
     const t = window.setTimeout(poll, 6000);
     return () => window.clearTimeout(t);
@@ -59,6 +61,30 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact }:
     setError(null);
     if (!file.type.startsWith('video/') && !/\.(mp4|mov|mkv|m4v|webm|avi)$/i.test(file.name)) {
       setError('Choose a video file (MP4 or MOV works best).');
+      return;
+    }
+    if (r2) {
+      setProgress(0);
+      try {
+        await uploadToR2({
+          titleId,
+          episodeId: episodeId ?? null,
+          file,
+          onProgress: (p) => setProgress(Math.floor(p)),
+          onOffline: setOffline,
+          signal: { cancelled: false },
+        });
+        setProgress(null);
+        const s = await refreshVideo(titleId, episodeId);
+        setState(s);
+      } catch (e) {
+        setProgress(null);
+        setError(e instanceof Error ? e.message : 'Upload failed.');
+        setState(await refreshVideo(titleId, episodeId));
+      } finally {
+        setOffline(false);
+        if (input.current) input.current.value = '';
+      }
       return;
     }
     const start = await startVideoUpload(titleId, episodeId);
@@ -98,7 +124,15 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact }:
   return (
     <div>
       <p style={{ margin: '0 0 12px' }}>
-        <span className={`a-badge ${tone}`}>{busy ? `Uploading ${progress}%` : LABEL[state.status]}</span>
+        <span className={`a-badge ${tone}`}>
+          {busy
+            ? `Uploading ${progress}%`
+            : r2 && state.status === 'pending'
+              ? 'Upload not finished'
+              : r2 && state.status === 'processing'
+                ? 'Uploaded · waiting for conversion to MP4'
+                : LABEL[state.status]}
+        </span>
         {state.status === 'ready' && state.duration ? (
           <span className="a-muted"> · {Math.round(state.duration / 60)} min</span>
         ) : null}
@@ -112,17 +146,20 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact }:
       {busy && offline && <div className="form-msg error">No internet. The upload is paused and will continue by itself when you’re back online. Keep this page open.</div>}
       {busy && <p className="a-muted">Keep this page open and the phone plugged in until the upload reaches 100%. The screen stays on by itself.</p>}
       {state.status === 'errored' && state.error && <div className="form-msg error">{state.error}</div>}
+      {r2 && !busy && state.status === 'pending' && (
+        <p className="a-muted">Choose the same file again and the upload continues from where it stopped.</p>
+      )}
       {error && <div className="form-msg error">{error}</div>}
 
       {!connected ? (
-        <p className="a-muted">Video isn’t connected yet. Add the Mux keys in Vercel to turn on uploads.</p>
+        <p className="a-muted">Video storage isn’t connected yet. Add the Cloudflare R2 keys in Vercel to turn on uploads.</p>
       ) : (
         <label className={`btn ${state.status === 'ready' ? 'btn-gray' : 'btn-red'} btn-small`} aria-disabled={busy}>
-          {state.status === 'ready' ? 'Replace video' : 'Upload video'}
+          {state.status === 'ready' || state.status === 'processing' ? 'Replace video' : state.status === 'pending' && r2 ? 'Continue upload' : 'Upload video'}
           <input
             ref={input}
             type="file"
-            accept="video/*"
+            accept="video/*,.mp4,.m4v,.mov,.mkv,.avi,.webm"
             hidden
             disabled={busy}
             onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])}
@@ -130,8 +167,9 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact }:
         </label>
       )}
       {!compact && <p className="a-muted" style={{ marginTop: 12, marginBottom: 0 }}>
-        Large films can take a while on mobile data. Wi-Fi is best. Videos are protected: only viewers allowed by
-        the film’s plan and rights can play them.
+        {r2
+          ? 'MP4 works best (plays straight away). Large films can take a while: use Wi‑Fi and keep the phone plugged in. If it stops, choose the same file again to continue. Videos are protected: only viewers allowed by the film’s plan and rights can play them.'
+          : 'Large films can take a while on mobile data. Wi-Fi is best. Videos are protected: only viewers allowed by the film’s plan and rights can play them.'}
       </p>}
     </div>
   );

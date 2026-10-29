@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { getEntitlement, getEpisodes, partLabel, type CatalogTitle, type Entitlement } from '@cinewave/shared';
 import { signedStreamUrl } from './mux';
+import { signedGet } from './r2';
 
 export type PlaybackEpisode = {
   id: string;
@@ -36,8 +37,18 @@ export async function resolvePlayback(
   if (!ent.can_play) return out;
 
   const { data: plan } = await sb.from('plans').select('max_quality').eq('id', ent.user_plan ?? 'free').maybeSingle();
-  const sign = async (playbackId: unknown) =>
-    playbackId ? signedStreamUrl(sb, playbackId as string, { maxResolution: plan?.max_quality ?? '720p' }) : null;
+  // Where the video lives: Cloudflare R2 (MP4 file) or Mux (older uploads).
+  const source = async (titleId: string, episodeId: string | null) => {
+    const { data } = await sb.rpc('video_source', { t_id: titleId, e_id: episodeId, country });
+    const row = (Array.isArray(data) ? data[0] : data) as { provider: string; ref: string } | undefined;
+    if (!row?.ref) return null;
+    try {
+      if (row.provider === 'r2') return await signedGet(row.ref, 6 * 3600);
+      return await signedStreamUrl(sb, row.ref, { maxResolution: plan?.max_quality ?? '720p' });
+    } catch {
+      return null;
+    }
+  };
 
   const { data: seriesRow } = user
     ? await sb.from('watch_progress').select('position_seconds, completed, updated_at, episode_id').eq('title_id', title.id).maybeSingle()
@@ -49,8 +60,7 @@ export async function resolvePlayback(
     const multi = new Set(eps.map((e) => e.season)).size > 1;
     const current = eps.find((e) => e.id === partId) ?? eps.find((e) => e.id === seriesRow?.episode_id) ?? eps[0];
     const next = eps[eps.indexOf(current) + 1];
-    const { data: pid } = await sb.rpc('playback_id_for_episode', { e_id: current.id, country });
-    out.src = await sign(pid);
+    out.src = await source(title.id, current.id);
     if (user) {
       const { data } = await sb.from('episode_progress').select('position_seconds, completed, updated_at').eq('episode_id', current.id).maybeSingle();
       if (data) out.startAtUpdated = data.updated_at;
@@ -65,8 +75,7 @@ export async function resolvePlayback(
     return out;
   }
 
-  const { data: pid } = await sb.rpc('playback_id_for', { t_id: title.id, country });
-  out.src = await sign(pid);
+  out.src = await source(title.id, null);
   if (seriesRow) out.startAtUpdated = seriesRow.updated_at;
   if (seriesRow && !seriesRow.completed) out.startAt = seriesRow.position_seconds;
   return out;

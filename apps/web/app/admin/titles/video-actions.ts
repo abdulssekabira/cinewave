@@ -42,7 +42,7 @@ export async function refreshVideo(titleId: string, episodeId?: string): Promise
   q = episodeId ? q.eq('episode_id', episodeId) : q.is('episode_id', null);
   const { data: m } = await q.order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (!m) return { status: 'none' };
-  if (m.status === 'ready' || m.status === 'errored' || !muxConfigured()) {
+  if (m.provider === 'r2' || m.status === 'ready' || m.status === 'errored' || !muxConfigured()) {
     return { status: m.status, duration: m.duration_seconds, error: m.error_text };
   }
   try {

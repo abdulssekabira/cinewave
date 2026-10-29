@@ -10,7 +10,7 @@ import { ImageUpload } from './ImageUpload';
 type Row = Episode & { video: VideoState };
 
 /** Parts of a series: add parts, upload each part's video, edit, hide, delete. */
-export function EpisodeManager({ titleId, episodes, connected, canPublish = true }: { titleId: string; episodes: Row[]; connected: boolean; canPublish?: boolean }) {
+export function EpisodeManager({ titleId, episodes, connected, canPublish = true, storage = 'mux' }: { titleId: string; episodes: Row[]; connected: boolean; canPublish?: boolean; storage?: 'mux' | 'r2' }) {
   const seasons = [...new Set(episodes.map((e) => e.season))];
   const multi = seasons.length > 1;
   const lastSeason = seasons.length ? Math.max(...seasons) : 1;
@@ -29,6 +29,7 @@ export function EpisodeManager({ titleId, episodes, connected, canPublish = true
               titleId={titleId}
               ep={e}
               canPublish={canPublish}
+              storage={storage}
               multi={multi}
               connected={connected}
               open={openId === e.id || state.id === e.id}
@@ -61,8 +62,8 @@ export function EpisodeManager({ titleId, episodes, connected, canPublish = true
 }
 
 function EpisodeRow({
-  titleId, ep, multi, connected, open, onToggle, canPublish,
-}: { titleId: string; ep: Row; multi: boolean; connected: boolean; open: boolean; onToggle: () => void; canPublish: boolean }) {
+  titleId, ep, multi, connected, open, onToggle, canPublish, storage,
+}: { titleId: string; ep: Row; multi: boolean; connected: boolean; open: boolean; onToggle: () => void; canPublish: boolean; storage: 'mux' | 'r2' }) {
   const locked = !canPublish && ep.published;
   const [state, action, pending] = useActionState<EpState, FormData>(saveEpisode.bind(null, titleId, ep.id), {});
   const [confirming, setConfirming] = useState(false);
@@ -88,7 +89,7 @@ function EpisodeRow({
         <div className="ep-body">
           <section>
             <h3 className="ep-sub">Video</h3>
-            <VideoUpload titleId={titleId} episodeId={ep.id} initial={ep.video} connected={connected} compact />
+            <VideoUpload titleId={titleId} episodeId={ep.id} initial={ep.video} connected={connected} storage={storage} compact />
           </section>
 
           <form action={action} className="ep-form">

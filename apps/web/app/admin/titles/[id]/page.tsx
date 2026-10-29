@@ -14,6 +14,7 @@ import {
 import { deleteRights, endRights } from '../actions';
 import { RightsForm } from '@/components/admin/RightsForm';
 import { TitleForm } from '@/components/admin/TitleForm';
+import { r2Configured } from '@/lib/r2';
 import { VideoUpload } from '@/components/admin/VideoUpload';
 import { EpisodeManager } from '@/components/admin/EpisodeManager';
 import type { Episode } from '@cinewave/shared';
@@ -157,7 +158,7 @@ export default async function EditTitle({ params, searchParams }: Props) {
           <p className="a-muted" style={{ marginTop: -4 }}>
             Viewers see one poster for this series. Tapping it lists these parts in order, and each part plays its own video.
           </p>
-          <EpisodeManager titleId={title.id} episodes={episodeRows} connected={muxConfigured()} canPublish={isAdmin} />
+          <EpisodeManager titleId={title.id} episodes={episodeRows} connected={r2Configured() || muxConfigured()} storage={r2Configured() ? 'r2' : 'mux'} canPublish={isAdmin} />
         </section>
       ) : (
         <section className="a-card" style={{ marginTop: 24 }} id="video">
@@ -166,7 +167,8 @@ export default async function EditTitle({ params, searchParams }: Props) {
             <p className="a-muted">This film is live. Only the owner can replace its video.</p>
           ) : <VideoUpload
             titleId={title.id}
-            connected={muxConfigured()}
+            connected={r2Configured() || muxConfigured()}
+            storage={r2Configured() ? 'r2' : 'mux'}
             initial={media ? { status: media.status, duration: media.duration_seconds, error: media.error_text } : { status: 'none' }}
           />}
         </section>

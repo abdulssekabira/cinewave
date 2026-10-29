@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getEpisodes, getProfile, getTitleBySlug, partLabel } from '@cinewave/shared';
 import { bearerClient, requestCountry } from '@/lib/supabase/bearer';
 import { downloadRendition, muxConfigured, signedFileUrl } from '@/lib/mux';
+import { r2Configured, signedGet } from '@/lib/r2';
 
 const json = (body: unknown, status = 200) =>
   NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -35,26 +36,34 @@ export async function GET(req: NextRequest) {
     episode = { id: ep.id, label: partLabel(ep, multi), name: ep.name };
   }
 
-  const { data, error } = await sb.rpc('issue_download', { t_id: title.id, e_id: episode?.id ?? null, country });
+  const { data, error } = await sb.rpc('issue_download2', { t_id: title.id, e_id: episode?.id ?? null, country });
   const row = (Array.isArray(data) ? data[0] : data) as
-    | { download_id: string | null; expires_at: string | null; playback_id: string | null; asset_id: string | null; reason: string }
+    | { download_id: string | null; expires_at: string | null; provider: string | null; ref: string | null; asset_id: string | null; bytes: number | null; reason: string }
     | undefined;
   if (error || !row) return json({ status: 'refused', reason: 'error' }, 500);
-  if (row.reason !== 'ok' || !row.playback_id) return json({ status: 'refused', reason: row.reason });
-  if (!muxConfigured() || !row.asset_id) return json({ status: 'refused', reason: 'no_video' });
+  if (row.reason !== 'ok' || !row.ref) return json({ status: 'refused', reason: row.reason });
 
   try {
-    const r = await downloadRendition(row.asset_id);
-    if (r.status === 'preparing') return json({ status: 'preparing' });
-    if (r.status === 'unavailable') return json({ status: 'refused', reason: 'no_video' });
-    const url = await signedFileUrl(sb, row.playback_id, r.name);
+    let url: string | null = null;
+    let bytes: number | null = row.bytes ? Number(row.bytes) : null;
+    if (row.provider === 'r2') {
+      if (!r2Configured()) return json({ status: 'refused', reason: 'no_video' });
+      url = await signedGet(row.ref, 3 * 3600);
+    } else {
+      if (!muxConfigured() || !row.asset_id) return json({ status: 'refused', reason: 'no_video' });
+      const r = await downloadRendition(row.asset_id);
+      if (r.status === 'preparing') return json({ status: 'preparing' });
+      if (r.status === 'unavailable') return json({ status: 'refused', reason: 'no_video' });
+      url = await signedFileUrl(sb, row.ref, r.name);
+      bytes = r.bytes;
+    }
     if (!url) return json({ status: 'refused', reason: 'error' }, 500);
     return json({
       status: 'ready',
       download_id: row.download_id,
       expires_at: row.expires_at,
       url,
-      bytes: r.bytes,
+      bytes,
       title: { id: title.id, slug: title.slug, title: title.title, kind: title.kind ?? 'movie', poster_url: title.poster_url, backdrop_url: title.backdrop_url },
       episode,
     });
