@@ -15,6 +15,8 @@ import { deleteRights, endRights } from '../actions';
 import { RightsForm } from '@/components/admin/RightsForm';
 import { TitleForm } from '@/components/admin/TitleForm';
 import { VideoUpload } from '@/components/admin/VideoUpload';
+import { EpisodeManager } from '@/components/admin/EpisodeManager';
+import type { Episode } from '@cinewave/shared';
 import { muxConfigured } from '@/lib/mux';
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string }> };
@@ -34,12 +36,28 @@ export default async function EditTitle({ params, searchParams }: Props) {
     sb.from('rights').select('*').eq('title_id', id).order('starts_at', { ascending: false }),
     sb.from('partners').select('*').order('name'),
     sb.from('media_assets').select('status, duration_seconds, error_text')
-      .eq('title_id', id).eq('kind', 'feature').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      .eq('title_id', id).is('episode_id', null).eq('kind', 'feature').order('created_at', { ascending: false }).limit(1).maybeSingle(),
     getVjs(sb, true),
   ]);
   if (!t) notFound();
 
   const title = t as AdminTitle;
+
+  // Series parts with the latest video status of each.
+  let episodeRows: (Episode & { video: { status: 'none' | 'pending' | 'processing' | 'ready' | 'errored'; duration?: number | null; error?: string | null } })[] = [];
+  if (title.kind === 'series') {
+    const [{ data: eps }, { data: vids }] = await Promise.all([
+      sb.from('episodes').select('*').eq('title_id', id).order('season').order('number'),
+      sb.from('media_assets').select('episode_id, status, duration_seconds, error_text, created_at')
+        .eq('title_id', id).not('episode_id', 'is', null).order('created_at', { ascending: false }),
+    ]);
+    const latest = new Map<string, { status: string; duration_seconds: number | null; error_text: string | null }>();
+    for (const v of vids ?? []) if (!latest.has(v.episode_id)) latest.set(v.episode_id, v);
+    episodeRows = ((eps ?? []) as Episode[]).map((e) => {
+      const v = latest.get(e.id);
+      return { ...e, video: v ? { status: v.status as 'ready', duration: v.duration_seconds, error: v.error_text } : { status: 'none' as const } };
+    });
+  }
   const rights = (rightsData ?? []) as RightsRow[];
   const partners = (partnerData ?? []) as Partner[];
   const partnerName = new Map(partners.map((p) => [p.id, p.name]));
@@ -133,14 +151,24 @@ export default async function EditTitle({ params, searchParams }: Props) {
         )}
       </section>
 
-      <section className="a-card" style={{ marginTop: 24 }} id="video">
-        <h2>Video file</h2>
-        <VideoUpload
-          titleId={title.id}
-          connected={muxConfigured()}
-          initial={media ? { status: media.status, duration: media.duration_seconds, error: media.error_text } : { status: 'none' }}
-        />
-      </section>
+      {title.kind === 'series' ? (
+        <section className="a-card" style={{ marginTop: 24 }} id="parts">
+          <h2>Parts</h2>
+          <p className="a-muted" style={{ marginTop: -4 }}>
+            Viewers see one poster for this series. Tapping it lists these parts in order, and each part plays its own video.
+          </p>
+          <EpisodeManager titleId={title.id} episodes={episodeRows} connected={muxConfigured()} />
+        </section>
+      ) : (
+        <section className="a-card" style={{ marginTop: 24 }} id="video">
+          <h2>Video file</h2>
+          <VideoUpload
+            titleId={title.id}
+            connected={muxConfigured()}
+            initial={media ? { status: media.status, duration: media.duration_seconds, error: media.error_text } : { status: 'none' }}
+          />
+        </section>
+      )}
     </>
   );
 }

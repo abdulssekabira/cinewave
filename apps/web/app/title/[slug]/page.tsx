@@ -6,6 +6,9 @@ import {
   formatRuntime,
   genreLabel,
   getEntitlement,
+  getEpisodeProgress,
+  getEpisodes,
+  partLabel,
   getGenres,
   getProfile,
   getRelated,
@@ -47,12 +50,29 @@ export default async function TitlePage({ params }: Props) {
     user ? getWatchlistIds(sb) : Promise.resolve(new Set<string>()),
     getGenres(sb, true),
     user
-      ? sb.from('watch_progress').select('position_seconds, duration_seconds, completed').eq('title_id', title.id).maybeSingle().then((r) => r.data)
+      ? sb.from('watch_progress').select('position_seconds, duration_seconds, completed, episode_id').eq('title_id', title.id).maybeSingle().then((r) => r.data)
       : Promise.resolve(null),
   ]);
 
-  const resumeAt = progress && !progress.completed && progress.position_seconds > 30 ? progress.position_seconds : 0;
-  const total = progress?.duration_seconds || (title.runtime_minutes ?? 0) * 60;
+  // Series: the list of parts, each part's resume point, and which part to continue.
+  const isSeries = title.kind === 'series';
+  const episodes = isSeries ? (await getEpisodes(sb, title.id)).filter((e) => e.published) : [];
+  const epProgress = user && isSeries ? await getEpisodeProgress(sb, episodes.map((e) => e.id)) : new Map();
+  const multiSeason = new Set(episodes.map((e) => e.season)).size > 1;
+  const currentEp = isSeries ? episodes.find((e) => e.id === progress?.episode_id) ?? episodes[0] ?? null : null;
+  const currentEpProgress = currentEp ? epProgress.get(currentEp.id) : null;
+
+  const resumeAt = isSeries
+    ? (currentEpProgress && !currentEpProgress.completed && currentEpProgress.position_seconds > 30 ? currentEpProgress.position_seconds : 0)
+    : (progress && !progress.completed && progress.position_seconds > 30 ? progress.position_seconds : 0);
+  const total = isSeries
+    ? currentEpProgress?.duration_seconds || (currentEp?.runtime_minutes ?? 0) * 60
+    : progress?.duration_seconds || (title.runtime_minutes ?? 0) * 60;
+  const watchHref = (epId?: string) => `/watch/${title.slug}${epId ? `?part=${epId}` : ''}`;
+  const ctaHref = ent.reason === 'sign_in_required' ? `/login?next=/title/${title.slug}`
+    : ent.reason === 'upgrade_required' ? '/plans'
+    : ent.reason === 'device_limit' ? '/account#devices' : null;
+
   const mmss = (s: number) => {
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = Math.floor(s % 60);
     return h ? `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}` : `${m}:${String(x).padStart(2, '0')}`;
@@ -85,9 +105,14 @@ export default async function TitlePage({ params }: Props) {
             </div>
           )}
           <div className="hero-actions">
-            {ent.can_play ? (
-              <Link href={`/watch/${title.slug}`} className="btn btn-play">
-                <PlayIcon size={18} /> {resumeAt ? `Resume ${mmss(resumeAt)}` : 'Play'}
+            {ent.can_play && isSeries && !currentEp ? (
+              <button className="btn btn-play" disabled>Parts coming soon</button>
+            ) : ent.can_play ? (
+              <Link href={watchHref(currentEp?.id)} className="btn btn-play">
+                <PlayIcon size={18} />{' '}
+                {currentEp
+                  ? `${resumeAt ? 'Resume' : 'Play'} ${partLabel(currentEp, multiSeason)}${resumeAt ? ` · ${mmss(resumeAt)}` : ''}`
+                  : resumeAt ? `Resume ${mmss(resumeAt)}` : 'Play'}
               </Link>
             ) : ent.reason === 'sign_in_required' ? (
               <Link href={`/login?next=/title/${title.slug}`} className="btn btn-play"><PlayIcon size={18} /> Sign in to watch</Link>
@@ -119,6 +144,49 @@ export default async function TitlePage({ params }: Props) {
         </div>
       </section>
 
+      {isSeries && episodes.length > 0 && (
+        <section className="parts" aria-labelledby="parts-h">
+          <h2 className="section-h" id="parts-h">
+            Parts <span className="parts-count">{episodes.length}</span>
+          </h2>
+          {[...new Set(episodes.map((e) => e.season))].map((season) => (
+            <div key={season}>
+              {multiSeason && <h3 className="parts-season">Season {season}</h3>}
+              <ol className="parts-list">
+                {episodes.filter((e) => e.season === season).map((e) => {
+                  const pr = epProgress.get(e.id);
+                  const dur = pr?.duration_seconds || (e.runtime_minutes ?? 0) * 60;
+                  const pct = pr ? (pr.completed ? 100 : dur ? Math.min(100, (pr.position_seconds / dur) * 100) : 0) : 0;
+                  const isCurrent = currentEp?.id === e.id && Boolean(pr);
+                  const art = e.still_url ?? title.backdrop_url ?? title.poster_url;
+                  return (
+                    <li key={e.id}>
+                      <Link href={ent.can_play ? watchHref(e.id) : ctaHref ?? `/title/${title.slug}`} className={`part${isCurrent ? ' current' : ''}`}>
+                        <div className="part-thumb">
+                          {art ? <img src={art} alt="" loading="lazy" /> : <div className="part-thumb-fill" />}
+                          <span className="part-play" aria-hidden="true"><PlayIcon size={16} /></span>
+                          {pct > 0 && <div className="part-progress"><div style={{ width: `${pct}%` }} /></div>}
+                        </div>
+                        <div className="part-text">
+                          <div className="part-label">
+                            {partLabel(e, false)}
+                            {pr?.completed && <span className="part-done">Watched</span>}
+                            {isCurrent && !pr?.completed && <span className="part-now">Continue</span>}
+                          </div>
+                          {e.name && <div className="part-name">{e.name}</div>}
+                          <div className="part-meta">{e.runtime_minutes ? formatRuntime(e.runtime_minutes) : ''}</div>
+                          {e.synopsis && <p className="part-syn">{e.synopsis}</p>}
+                        </div>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          ))}
+        </section>
+      )}
+
       <div className="title-body">
         <div>
           <h2 className="section-h">Synopsis</h2>
@@ -141,7 +209,8 @@ export default async function TitlePage({ params }: Props) {
         <div>
           <h2 className="section-h">Details</h2>
           <dl className="facts">
-            {title.runtime_minutes && (<><dt>Runtime</dt><dd>{formatRuntime(title.runtime_minutes)}</dd></>)}
+            {isSeries && (<><dt>Parts</dt><dd>{episodes.length}{multiSeason ? ` in ${new Set(episodes.map((e) => e.season)).size} seasons` : ''}</dd></>)}
+            {!isSeries && title.runtime_minutes && (<><dt>Runtime</dt><dd>{formatRuntime(title.runtime_minutes)}</dd></>)}
             {title.maturity_rating && (<><dt>Rated</dt><dd>{title.maturity_rating}</dd></>)}
             {title.audio_languages.length > 0 && (<><dt>Audio</dt><dd>{langs(title.audio_languages)}</dd></>)}
             {title.subtitle_languages.length > 0 && (<><dt>Subtitles</dt><dd>{langs(title.subtitle_languages)}</dd></>)}

@@ -20,6 +20,17 @@ export function TitleForm({ title, genres, selectedGenres, vjs }: { title: Admin
         <div className="a-col-main">
           <section className="a-card">
             <h2>Details</h2>
+            <fieldset className="a-field">
+              <legend>Type</legend>
+              <div className="a-radios">
+                <label className="a-check">
+                  <input type="radio" name="kind" value="movie" defaultChecked={(t?.kind ?? 'movie') === 'movie'} /> Movie (one video)
+                </label>
+                <label className="a-check">
+                  <input type="radio" name="kind" value="series" defaultChecked={t?.kind === 'series'} /> Series (several parts under one poster)
+                </label>
+              </div>
+            </fieldset>
             <div className="a-field">
               <label htmlFor="f-title">Title *</label>
               <input id="f-title" name="title" className="input" required defaultValue={t?.title ?? ''} />

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle } from '@cinewave/shared';
 import { saveWatchProgress } from '@/app/watch/[slug]/actions';
 import { ExpandIcon, MuteIcon, PauseIcon, PlayIcon, SettingsIcon, StarIcon, VolumeIcon } from './Icons';
@@ -12,6 +13,13 @@ function clock(s: number) {
   const sec = Math.floor(s % 60);
   return h ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}` : `${m}:${String(sec).padStart(2, '0')}`;
 }
+
+export type PlayerEpisode = {
+  id: string;
+  label: string; // "Part 3"
+  name: string | null;
+  next: { label: string; name: string | null; href: string } | null;
+};
 
 type Saved = { pos: number; dur: number; at: number };
 const KEY = (id: string) => `gle:pos:${id}`;
@@ -43,13 +51,17 @@ export function VideoPlayer({
   startAt = 0,
   startAtUpdated = null,
   signedIn,
+  episode = null,
 }: {
   title: CatalogTitle;
   src?: string | null;
   startAt?: number;
   startAtUpdated?: string | null;
   signedIn: boolean;
+  episode?: PlayerEpisode | null;
 }) {
+  const router = useRouter();
+  const posKey = episode?.id ?? title.id; // each part has its own resume point
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const seekRef = useRef<HTMLDivElement>(null);
@@ -70,15 +82,24 @@ export function VideoPlayer({
   const [compact, setCompact] = useState(false);
   const [resumeAt, setResumeAt] = useState<number | null>(null);
   const [offline, setOffline] = useState(false);
+  const [upNext, setUpNext] = useState<number | null>(null); // seconds left before the next part starts
+
+  // Next part countdown.
+  useEffect(() => {
+    if (upNext === null || !episode?.next) return;
+    if (upNext <= 0) { router.push(episode.next.href); return; }
+    const t = window.setTimeout(() => setUpNext((n) => (n === null ? null : n - 1)), 1000);
+    return () => window.clearTimeout(t);
+  }, [upNext, episode, router]);
 
   // Pick the most recent saved spot: this account's (any device) or this phone's own copy.
   useEffect(() => {
-    const local = readLocal(title.id);
+    const local = readLocal(posKey);
     const serverAt = startAtUpdated ? Date.parse(startAtUpdated) : 0;
     let pos = startAt;
     if (local && local.at > serverAt + 5000 && !(local.dur && local.pos / local.dur > 0.92)) pos = local.pos;
     if (pos > 30) setResumeAt(pos);
-  }, [title.id, startAt, startAtUpdated]);
+  }, [posKey, startAt, startAtUpdated]);
 
   const save = useCallback(
     (force = false) => {
@@ -88,16 +109,16 @@ export function VideoPlayer({
       const dur = Number.isFinite(v.duration) ? v.duration : 0;
       if (force || Math.abs(pos - lastLocal.current) >= 2) {
         lastLocal.current = pos;
-        writeLocal(title.id, { pos, dur, at: Date.now() });
+        writeLocal(posKey, { pos, dur, at: Date.now() });
       }
       if (!signedIn) return;
       if (!force && !pending.current && Math.abs(pos - lastSaved.current) < 5) return;
       lastSaved.current = pos;
-      saveWatchProgress(title.id, pos, dur || undefined)
+      saveWatchProgress(title.id, pos, dur || undefined, episode?.id)
         .then(() => { pending.current = false; })
         .catch(() => { pending.current = true; });
     },
-    [signedIn, src, title.id],
+    [signedIn, src, title.id, posKey, episode?.id],
   );
 
   const flash = (msg: string) => {
@@ -309,7 +330,7 @@ export function VideoPlayer({
               target.current = null;
             }
           }}
-          onEnded={() => save(true)}
+          onEnded={() => { save(true); if (episode?.next) setUpNext(10); }}
           onError={(e) => {
             if (!navigator.onLine) { setOffline(true); return; }
             flash(`This video could not be loaded (code ${e.currentTarget.error?.code ?? '?'}).`);
@@ -336,6 +357,9 @@ export function VideoPlayer({
         <div className="player-top">
           <div style={{ visibility: showInfo ? 'visible' : 'hidden' }}>
             <h1 className="player-title">{title.title}</h1>
+            {episode && (
+              <div className="player-part">{episode.label}{episode.name ? ` · ${episode.name}` : ''}</div>
+            )}
             <div className="player-meta">
               {title.maturity_rating && <span>{title.maturity_rating}</span>}
               {title.runtime_minutes && <span>{formatRuntime(title.runtime_minutes)}</span>}
@@ -405,10 +429,21 @@ export function VideoPlayer({
             <button className="btn btn-gray" onClick={() => startFrom(0)}>Start over</button>
           </div>
         </div>
-      ) : !playing && (
+      ) : !playing && upNext === null && (
         <button className="player-center" onClick={toggle} aria-label="Play">
           <PlayIcon size={30} style={{ marginLeft: 4 }} />
         </button>
+      )}
+      {upNext !== null && episode?.next && (
+        <div className="player-resume" role="dialog" aria-label="Next part">
+          <p>Up next: <b>{episode.next.label}</b>{episode.next.name ? ` · ${episode.next.name}` : ''}</p>
+          <div className="player-resume-actions">
+            <button className="btn btn-play" onClick={() => router.push(episode.next!.href)} autoFocus>
+              <PlayIcon size={18} /> Play now ({upNext})
+            </button>
+            <button className="btn btn-gray" onClick={() => setUpNext(null)}>Cancel</button>
+          </div>
+        </div>
       )}
       {offline && src && (
         <div className="player-offline" role="status">

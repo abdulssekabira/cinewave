@@ -16,6 +16,7 @@ export default async function SearchPage({ searchParams }: Props) {
     query: sp.q,
     genre: sp.genre || undefined,
     vj: sp.vj || undefined,
+    kind: sp.kind === 'movie' || sp.kind === 'series' ? sp.kind : undefined,
     year: sp.year ? Number(sp.year) || undefined : undefined,
     access: sp.access === 'free' || sp.access === 'premium' ? sp.access : undefined,
     sort: sp.sort === 'newest' || sp.sort === 'az' || sp.sort === 'popular' ? sp.sort : 'latest',
@@ -28,7 +29,7 @@ export default async function SearchPage({ searchParams }: Props) {
   ]);
   const vjName = vjs.find((v) => v.slug === params.vj)?.name;
   const genreName = genres.find((g) => g.slug === params.genre)?.name;
-  const heading = vjName ?? genreName ?? (params.sort === 'newest' ? 'New & Popular' : 'Movies');
+  const heading = vjName ?? genreName ?? (params.kind === 'series' ? 'Series' : params.sort === 'newest' ? 'New & Popular' : 'Movies');
 
   return (
     <div className="page">
@@ -42,6 +43,7 @@ export default async function SearchPage({ searchParams }: Props) {
           {params.genre && <input type="hidden" name="genre" value={params.genre} />}
           {params.vj && <input type="hidden" name="vj" value={params.vj} />}
           {params.access && <input type="hidden" name="access" value={params.access} />}
+          {params.kind && <input type="hidden" name="kind" value={params.kind} />}
           {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
         </form>
 
@@ -58,6 +60,16 @@ export default async function SearchPage({ searchParams }: Props) {
                 ]}
               />
             )}
+            <FilterSheet
+              param="kind"
+              title="Show"
+              current={params.kind ?? ''}
+              options={[
+                { value: '', label: 'Movies & series' },
+                { value: 'movie', label: 'Movies' },
+                { value: 'series', label: 'Series' },
+              ]}
+            />
             <FilterSheet
               param="genre"
               title="Genre"

@@ -87,6 +87,7 @@ export async function saveTitle(_: FormState, form: FormData): Promise<FormState
     rating,
     rating_source: rating === null ? null : ratingSource,
     vj_id: Number(text(form, 'vj_id')) || null,
+    kind: text(form, 'kind') === 'series' ? 'series' : 'movie',
   };
 
   const res = id

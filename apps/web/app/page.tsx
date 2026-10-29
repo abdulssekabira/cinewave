@@ -41,7 +41,8 @@ export default async function HomePage() {
               <LandscapeCard
                 key={c.title.id}
                 title={c.title}
-                progress={progressPercent(c.position_seconds, c.duration_seconds, c.title.runtime_minutes)}
+                progress={progressPercent(c.position_seconds, c.duration_seconds, c.episode ? null : c.title.runtime_minutes)}
+                episode={c.episode}
               />
             ))}
           </Row>

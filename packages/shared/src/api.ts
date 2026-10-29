@@ -3,6 +3,7 @@ import type {
   CatalogTitle,
   ContinueWatchingItem,
   Entitlement,
+  Episode,
   Genre,
   HomeRow,
   Plan,
@@ -113,6 +114,7 @@ export interface SearchParams {
   query?: string;
   genre?: string;
   vj?: string;
+  kind?: 'movie' | 'series';
   year?: number;
   access?: 'free' | 'premium';
   /** Default: latest added first. 'newest' = newest release year. */
@@ -124,6 +126,7 @@ export async function searchTitles(sb: SupabaseClient, p: SearchParams): Promise
   if (p.query?.trim()) q = q.ilike('title', `%${p.query.trim().replace(/[%_]/g, '')}%`);
   if (p.genre) q = q.contains('genres', [p.genre]);
   if (p.vj) q = q.eq('vj_slug', p.vj);
+  if (p.kind) q = q.eq('kind', p.kind);
   if (p.year) q = q.eq('release_year', p.year);
   if (p.access === 'free') q = q.eq('required_plan', 'free');
   if (p.access === 'premium') q = q.neq('required_plan', 'free');
@@ -231,20 +234,28 @@ export async function setWatchlisted(sb: SupabaseClient, userId: string, titleId
 export async function getContinueWatching(sb: SupabaseClient): Promise<ContinueWatchingItem[]> {
   const { data, error } = await sb
     .from('watch_progress')
-    .select('title_id, position_seconds, duration_seconds')
+    .select('title_id, position_seconds, duration_seconds, episode:episodes(id, season, number, name)')
     .eq('completed', false)
-    .gt('position_seconds', 30)
+    .or('position_seconds.gt.30,episode_id.not.is.null')
     .order('updated_at', { ascending: false })
     .limit(20);
   if (error) throw error;
-  const rows = (data ?? []) as { title_id: string; position_seconds: number; duration_seconds: number | null }[];
+  const rows = (data ?? []) as unknown as {
+    title_id: string; position_seconds: number; duration_seconds: number | null;
+    episode: Pick<Episode, 'id' | 'season' | 'number' | 'name'> | null;
+  }[];
   if (!rows.length) return [];
   const { data: titles, error: e2 } = await sb.from(CATALOG).select('*').in('id', rows.map((r) => r.title_id));
   if (e2) throw e2;
   const map = new Map((titles as CatalogTitle[]).map((t) => [t.id, t]));
   return rows
     .filter((r) => map.has(r.title_id))
-    .map((r) => ({ title: map.get(r.title_id)!, position_seconds: r.position_seconds, duration_seconds: r.duration_seconds }));
+    .map((r) => ({
+      title: map.get(r.title_id)!,
+      position_seconds: r.position_seconds,
+      duration_seconds: r.duration_seconds,
+      episode: r.episode,
+    }));
 }
 
 export async function saveProgress(
@@ -263,4 +274,63 @@ export async function saveProgress(
     completed,
   });
   if (error) throw error;
+}
+
+// ---- Series ---------------------------------------------------------------
+
+/** Parts of a series in viewing order (season, then part number). */
+export async function getEpisodes(sb: SupabaseClient, titleId: string): Promise<Episode[]> {
+  const { data, error } = await sb
+    .from('episodes')
+    .select('*')
+    .eq('title_id', titleId)
+    .order('season')
+    .order('number');
+  if (error) throw error;
+  return data as Episode[];
+}
+
+/** Resume points for each part of a series (signed-in viewer). */
+export async function getEpisodeProgress(sb: SupabaseClient, episodeIds: string[]) {
+  if (!episodeIds.length) return new Map<string, { position_seconds: number; duration_seconds: number | null; completed: boolean; updated_at: string }>();
+  const { data } = await sb
+    .from('episode_progress')
+    .select('episode_id, position_seconds, duration_seconds, completed, updated_at')
+    .in('episode_id', episodeIds);
+  return new Map((data ?? []).map((r) => [r.episode_id as string, r]));
+}
+
+/**
+ * Saves where the viewer is in a part, and remembers on the series which
+ * part they're on. Finishing a part moves the series on to the next one.
+ */
+export async function saveEpisodeProgress(
+  sb: SupabaseClient,
+  userId: string,
+  titleId: string,
+  episodeId: string,
+  positionSeconds: number,
+  durationSeconds?: number,
+) {
+  const pos = Math.max(0, Math.floor(positionSeconds));
+  const dur = durationSeconds ? Math.floor(durationSeconds) : null;
+  const completed = dur ? pos / dur > 0.92 : false;
+  const { error } = await sb.from('episode_progress').upsert({
+    user_id: userId, episode_id: episodeId, position_seconds: pos, duration_seconds: dur, completed,
+  });
+  if (error) throw error;
+
+  let seriesEpisode: string | null = episodeId;
+  let seriesPos = pos;
+  let seriesDone = false;
+  if (completed) {
+    const eps = await getEpisodes(sb, titleId);
+    const i = eps.findIndex((e) => e.id === episodeId);
+    const next = i >= 0 ? eps.slice(i + 1).find((e) => e.published) : undefined;
+    if (next) { seriesEpisode = next.id; seriesPos = 0; } else { seriesDone = true; }
+  }
+  await sb.from('watch_progress').upsert({
+    user_id: userId, title_id: titleId, episode_id: seriesEpisode,
+    position_seconds: seriesPos, duration_seconds: seriesPos ? dur : null, completed: seriesDone,
+  });
 }

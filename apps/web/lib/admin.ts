@@ -29,6 +29,7 @@ export interface AdminTitle {
   rating: number | null;
   rating_source: string | null;
   vj_id: number | null;
+  kind: 'movie' | 'series';
   published_at: string | null;
   updated_at: string;
 }

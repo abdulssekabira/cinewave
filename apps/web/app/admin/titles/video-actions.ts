@@ -19,14 +19,14 @@ async function origin() {
 }
 
 /** Starts an upload: returns a one-time URL the browser sends the file to. */
-export async function startVideoUpload(titleId: string): Promise<{ url?: string; error?: string }> {
+export async function startVideoUpload(titleId: string, episodeId?: string): Promise<{ url?: string; error?: string }> {
   const { sb, isAdmin } = await requireStaff();
   if (!muxConfigured()) return { error: 'Video isn’t connected yet: add MUX_TOKEN_ID and MUX_TOKEN_SECRET in Vercel, then redeploy.' };
   try {
     if (isAdmin) await ensureSigningKey(sb);
-    const up = await createDirectUpload(titleId, await origin());
+    const up = await createDirectUpload(episodeId ? `${titleId}:${episodeId}` : titleId, await origin());
     const { error } = await sb.from('media_assets').insert({
-      title_id: titleId, kind: 'feature', provider: 'mux', upload_id: up.id, status: 'pending',
+      title_id: titleId, episode_id: episodeId ?? null, kind: 'feature', provider: 'mux', upload_id: up.id, status: 'pending',
     });
     if (error) return { error: error.message };
     return { url: up.url };
@@ -36,16 +36,11 @@ export async function startVideoUpload(titleId: string): Promise<{ url?: string;
 }
 
 /** Asks Mux how the latest upload is doing and saves the answer. */
-export async function refreshVideo(titleId: string): Promise<VideoState> {
+export async function refreshVideo(titleId: string, episodeId?: string): Promise<VideoState> {
   const { sb, isAdmin } = await requireStaff();
-  const { data: m } = await sb
-    .from('media_assets')
-    .select('*')
-    .eq('title_id', titleId)
-    .eq('kind', 'feature')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  let q = sb.from('media_assets').select('*').eq('title_id', titleId).eq('kind', 'feature');
+  q = episodeId ? q.eq('episode_id', episodeId) : q.is('episode_id', null);
+  const { data: m } = await q.order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (!m) return { status: 'none' };
   if (m.status === 'ready' || m.status === 'errored' || !muxConfigured()) {
     return { status: m.status, duration: m.duration_seconds, error: m.error_text };
@@ -77,7 +72,8 @@ export async function refreshVideo(titleId: string): Promise<VideoState> {
       if (patch.status === 'ready') {
         // Fill in the runtime if it's empty.
         const mins = patch.duration_seconds ? Math.max(1, Math.round(Number(patch.duration_seconds) / 60)) : null;
-        if (mins) await sb.from('titles').update({ runtime_minutes: mins }).eq('id', titleId).is('runtime_minutes', null);
+        if (mins && episodeId) await sb.from('episodes').update({ runtime_minutes: mins }).eq('id', episodeId).is('runtime_minutes', null);
+        else if (mins) await sb.from('titles').update({ runtime_minutes: mins }).eq('id', titleId).is('runtime_minutes', null);
         revalidatePath(`/admin/titles/${titleId}`);
       }
     }

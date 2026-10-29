@@ -16,18 +16,18 @@ const LABEL: Record<VideoState['status'], string> = {
  * (so a dropped connection only retries one piece), then watches Mux until
  * the video is ready.
  */
-export function VideoUpload({ titleId, initial, connected }: { titleId: string; initial: VideoState; connected: boolean }) {
+export function VideoUpload({ titleId, episodeId, initial, connected, compact }: { titleId: string; episodeId?: string; initial: VideoState; connected: boolean; compact?: boolean }) {
   const [state, setState] = useState<VideoState>(initial);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
   const poll = useCallback(async () => {
-    const s = await refreshVideo(titleId);
+    const s = await refreshVideo(titleId, episodeId);
     setState(s);
     if (s.error && s.status !== 'errored') setError(s.error);
     return s;
-  }, [titleId]);
+  }, [titleId, episodeId]);
 
   useEffect(() => {
     if (progress !== null) return;
@@ -42,7 +42,7 @@ export function VideoUpload({ titleId, initial, connected }: { titleId: string; 
       setError('Choose a video file (MP4 or MOV works best).');
       return;
     }
-    const start = await startVideoUpload(titleId);
+    const start = await startVideoUpload(titleId, episodeId);
     if (!start.url) {
       setError(start.error ?? 'Could not start the upload.');
       return;
@@ -104,10 +104,10 @@ export function VideoUpload({ titleId, initial, connected }: { titleId: string; 
           />
         </label>
       )}
-      <p className="a-muted" style={{ marginTop: 12, marginBottom: 0 }}>
+      {!compact && <p className="a-muted" style={{ marginTop: 12, marginBottom: 0 }}>
         Large films can take a while on mobile data. Wi-Fi is best. Videos are protected: only viewers allowed by
         the film’s plan and rights can play them.
-      </p>
+      </p>}
     </div>
   );
 }

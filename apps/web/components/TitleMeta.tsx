@@ -6,7 +6,8 @@ export function TitleMeta({ title, full }: { title: CatalogTitle; full?: boolean
   const rating = ratingLabel(title.rating);
   return (
     <div className="meta-row">
-      <span className="pill">Movie</span>
+      <span className="pill">{title.kind === 'series' ? 'Series' : 'Movie'}</span>
+      {title.kind === 'series' && Boolean(title.episode_count) && <span>{title.episode_count} parts</span>}
       {title.required_plan === 'free' && <span className="pill pill-plain">Free</span>}
       {title.release_year && <span>{title.release_year}</span>}
       {rating && (

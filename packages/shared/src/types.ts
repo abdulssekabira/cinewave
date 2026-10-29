@@ -34,6 +34,26 @@ export interface CatalogTitle {
   vj_slug?: string | null;
   vj_name?: string | null;
   vj_photo_url?: string | null;
+  kind?: 'movie' | 'series';
+  episode_count?: number;
+}
+
+/** One part of a series. */
+export interface Episode {
+  id: string;
+  title_id: string;
+  season: number;
+  number: number;
+  name: string | null;
+  synopsis: string | null;
+  runtime_minutes: number | null;
+  still_url: string | null;
+  published: boolean;
+}
+
+/** "Part 3" or "S2 · Part 3" when a series has more than one season. */
+export function partLabel(e: Pick<Episode, 'season' | 'number'>, multiSeason = false): string {
+  return multiSeason ? `S${e.season} · Part ${e.number}` : `Part ${e.number}`;
 }
 
 export interface Plan {
@@ -107,6 +127,7 @@ export interface ContinueWatchingItem {
   title: CatalogTitle;
   position_seconds: number;
   duration_seconds: number | null;
+  episode?: Pick<Episode, 'id' | 'season' | 'number' | 'name'> | null;
 }
 
 export interface HomeRow {
