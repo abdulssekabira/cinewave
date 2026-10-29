@@ -9,19 +9,20 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://bugmkghovzdgncspjvwy.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_KBXLxTuRc-PR0aPrVjo4mw_vmLvoXrU",
         "EXPO_PUBLIC_SITE_URL": "https://www.glemovies.com"
+      },
+      "android": {
+        "image": "latest"
       }
     },
     "preview": {
       "extends": "base",
       "distribution": "internal",
-      "channel": "preview",
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
       "extends": "base",
-      "channel": "production",
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"

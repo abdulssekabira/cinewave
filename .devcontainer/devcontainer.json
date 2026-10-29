@@ -1,0 +1,5 @@
+{
+  "name": "GLE Movies",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "postCreateCommand": "echo 'To build the Android app, type:  bash scripts/android-build.sh'"
+}

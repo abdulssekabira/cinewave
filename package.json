@@ -10,7 +10,8 @@
     "web:build": "npm run build --workspace=@cinewave/web",
     "android": "npm run android --workspace=@cinewave/mobile",
     "mobile": "npm run start --workspace=@cinewave/mobile",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build:android": "bash scripts/android-build.sh"
   },
   "overrides": {
     "react": "19.3.0",
