@@ -42,6 +42,9 @@ export async function createDirectUpload(titleId: string, origin: string) {
     method: 'POST',
     body: JSON.stringify({
       cors_origin: origin,
+      // Full films on slow connections: the upload link stays valid for 7 days
+      // (Mux's default is 1 hour, which a big file can easily miss).
+      timeout: 604800,
       new_asset_settings: {
         playback_policies: ['signed'],
         video_quality: 'basic',

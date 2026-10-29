@@ -20,7 +20,26 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact }:
   const [state, setState] = useState<VideoState>(initial);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [offline, setOffline] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+
+  // While uploading: keep the screen on, and warn before leaving the page.
+  useEffect(() => {
+    if (progress === null) return;
+    let lock: { release: () => Promise<void> } | null = null;
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } };
+    const getLock = () => { nav.wakeLock?.request('screen').then((l) => { lock = l; }).catch(() => {}); };
+    getLock();
+    const onVisible = () => { if (document.visibilityState === 'visible') getLock(); };
+    const onLeave = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('beforeunload', onLeave);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('beforeunload', onLeave);
+      lock?.release().catch(() => {});
+    };
+  }, [progress === null]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const poll = useCallback(async () => {
     const s = await refreshVideo(titleId, episodeId);
@@ -51,8 +70,13 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact }:
     try {
       const { createUpload } = await import('@mux/upchunk');
       await new Promise<void>((resolve, reject) => {
-        const up = createUpload({ endpoint: start.url!, file, chunkSize: 8192 }); // 8 MB pieces
-        up.on('progress', (e) => setProgress(Math.round(e.detail as number)));
+        // 8 MB pieces. A piece that fails is retried patiently (bad network,
+        // power cut on the router); losing the connection pauses the upload
+        // and it continues by itself when the internet is back.
+        const up = createUpload({ endpoint: start.url!, file, chunkSize: 8192, attempts: 30, delayBeforeAttempt: 10 });
+        up.on('progress', (e) => { setProgress(Math.floor(e.detail as number)); setOffline(false); });
+        up.on('offline', () => setOffline(true));
+        up.on('online', () => setOffline(false));
         up.on('error', (e) => reject(new Error((e.detail as { message?: string })?.message ?? 'Upload failed')));
         up.on('success', () => resolve());
       });
@@ -85,7 +109,8 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact }:
           <div style={{ width: `${progress}%` }} />
         </div>
       )}
-      {busy && <p className="a-muted">Keep this page open until the upload reaches 100%.</p>}
+      {busy && offline && <div className="form-msg error">No internet. The upload is paused and will continue by itself when you’re back online. Keep this page open.</div>}
+      {busy && <p className="a-muted">Keep this page open and the phone plugged in until the upload reaches 100%. The screen stays on by itself.</p>}
       {state.status === 'errored' && state.error && <div className="form-msg error">{state.error}</div>}
       {error && <div className="form-msg error">{error}</div>}
 
