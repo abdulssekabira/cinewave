@@ -28,6 +28,7 @@ export interface AdminTitle {
   popularity: number;
   rating: number | null;
   rating_source: string | null;
+  vj_id: number | null;
   published_at: string | null;
   updated_at: string;
 }

@@ -1,12 +1,12 @@
 'use client';
 
 import { useActionState } from 'react';
-import type { Genre } from '@cinewave/shared';
+import type { Genre, Vj } from '@cinewave/shared';
 import { saveTitle, type FormState } from '@/app/admin/titles/actions';
 import type { AdminTitle } from '@/lib/admin';
 import { ImageUpload } from './ImageUpload';
 
-export function TitleForm({ title, genres, selectedGenres }: { title: AdminTitle | null; genres: Genre[]; selectedGenres: string[] }) {
+export function TitleForm({ title, genres, selectedGenres, vjs }: { title: AdminTitle | null; genres: Genre[]; selectedGenres: string[]; vjs: Vj[] }) {
   const [state, action, pending] = useActionState<FormState, FormData>(saveTitle, {});
   const t = title;
   const credits = (t?.credits ?? []).map((c) => `${c.name}, ${c.role}`).join('\n');
@@ -49,6 +49,15 @@ export function TitleForm({ title, genres, selectedGenres }: { title: AdminTitle
                 <label htmlFor="f-age">Age rating</label>
                 <input id="f-age" name="maturity_rating" className="input" defaultValue={t?.maturity_rating ?? ''} placeholder="e.g. PG, 13+, 18+" />
               </div>
+            </div>
+
+            <div className="a-field">
+              <label htmlFor="f-vj">VJ</label>
+              <select id="f-vj" name="vj_id" className="select input" defaultValue={t?.vj_id ? String(t.vj_id) : ''}>
+                <option value="">No VJ (original language)</option>
+                {vjs.map((v) => <option key={v.id} value={v.id}>{v.name}{v.active ? '' : ' (hidden)'}</option>)}
+              </select>
+              <small className="a-hint">Add or rename VJs in Admin → VJs &amp; genres.</small>
             </div>
 
             <fieldset className="a-field">

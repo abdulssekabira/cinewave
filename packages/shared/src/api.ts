@@ -8,6 +8,7 @@ import type {
   Plan,
   Profile,
   Subscription,
+  Vj,
 } from './types';
 
 /**
@@ -111,6 +112,7 @@ export async function getRelated(sb: SupabaseClient, title: CatalogTitle, limit 
 export interface SearchParams {
   query?: string;
   genre?: string;
+  vj?: string;
   year?: number;
   access?: 'free' | 'premium';
   sort?: 'popular' | 'newest' | 'az';
@@ -120,6 +122,7 @@ export async function searchTitles(sb: SupabaseClient, p: SearchParams): Promise
   let q = sb.from(CATALOG).select('*');
   if (p.query?.trim()) q = q.ilike('title', `%${p.query.trim().replace(/[%_]/g, '')}%`);
   if (p.genre) q = q.contains('genres', [p.genre]);
+  if (p.vj) q = q.eq('vj_slug', p.vj);
   if (p.year) q = q.eq('release_year', p.year);
   if (p.access === 'free') q = q.eq('required_plan', 'free');
   if (p.access === 'premium') q = q.neq('required_plan', 'free');
@@ -131,10 +134,34 @@ export async function searchTitles(sb: SupabaseClient, p: SearchParams): Promise
   return data as CatalogTitle[];
 }
 
-export async function getGenres(sb: SupabaseClient): Promise<Genre[]> {
-  const { data, error } = await sb.from('genres').select('*').order('name');
+/** Genres viewers can pick from (hidden ones left out), in the owner's order. */
+export async function getGenres(sb: SupabaseClient, includeHidden = false): Promise<Genre[]> {
+  let q = sb.from('genres').select('*').order('sort_order').order('name');
+  if (!includeHidden) q = q.eq('active', true);
+  const { data, error } = await q;
   if (error) throw error;
   return data as Genre[];
+}
+
+/** VJs viewers can pick from, in the owner's order. */
+export async function getVjs(sb: SupabaseClient, includeHidden = false): Promise<Vj[]> {
+  let q = sb.from('vjs').select('*').order('sort_order').order('name');
+  if (!includeHidden) q = q.eq('active', true);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data as Vj[];
+}
+
+/** How many viewable films each genre and VJ has (for the filter lists). */
+export async function getFilterCounts(sb: SupabaseClient) {
+  const { data } = await sb.from(CATALOG).select('genres, vj_slug').limit(2000);
+  const genres: Record<string, number> = {};
+  const vjs: Record<string, number> = {};
+  for (const r of (data ?? []) as { genres: string[]; vj_slug: string | null }[]) {
+    for (const g of r.genres ?? []) genres[g] = (genres[g] ?? 0) + 1;
+    if (r.vj_slug) vjs[r.vj_slug] = (vjs[r.vj_slug] ?? 0) + 1;
+  }
+  return { genres, vjs, total: data?.length ?? 0 };
 }
 
 export async function getPlans(sb: SupabaseClient): Promise<Plan[]> {

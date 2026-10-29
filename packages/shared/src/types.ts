@@ -31,6 +31,9 @@ export interface CatalogTitle {
   downloadable: boolean;
   rating: number | null;
   rating_source: string | null;
+  vj_slug?: string | null;
+  vj_name?: string | null;
+  vj_photo_url?: string | null;
 }
 
 export interface Plan {
@@ -55,6 +58,17 @@ export interface Genre {
   id: number;
   slug: string;
   name: string;
+  sort_order?: number;
+  active?: boolean;
+}
+
+export interface Vj {
+  id: number;
+  slug: string;
+  name: string;
+  photo_url: string | null;
+  sort_order: number;
+  active: boolean;
 }
 
 export interface Profile {

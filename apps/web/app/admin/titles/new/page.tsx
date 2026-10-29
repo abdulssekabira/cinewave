@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { getGenres } from '@cinewave/shared';
+import { getGenres, getVjs } from '@cinewave/shared';
 import { requireStaff } from '@/lib/admin';
 import { TitleForm } from '@/components/admin/TitleForm';
 
 export default async function NewTitle() {
   const { sb } = await requireStaff();
-  const genres = await getGenres(sb);
+  const [genres, vjs] = await Promise.all([getGenres(sb, true), getVjs(sb, true)]);
   return (
     <>
       <div className="a-head">
@@ -17,7 +17,7 @@ export default async function NewTitle() {
       <p className="a-muted" style={{ marginTop: -8, marginBottom: 20 }}>
         Save it as a draft first. After saving you can add the rights window that makes it visible.
       </p>
-      <TitleForm title={null} genres={genres} selectedGenres={[]} />
+      <TitleForm title={null} genres={genres} selectedGenres={[]} vjs={vjs} />
     </>
   );
 }

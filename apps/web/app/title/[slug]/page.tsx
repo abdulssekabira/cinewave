@@ -6,6 +6,7 @@ import {
   formatRuntime,
   genreLabel,
   getEntitlement,
+  getGenres,
   getProfile,
   getRelated,
   getTitleBySlug,
@@ -40,12 +41,14 @@ export default async function TitlePage({ params }: Props) {
 
   const profile = user ? await getProfile(sb, user.id) : null;
   const country = await viewerCountry(profile?.country_code);
-  const [ent, related, watchlist] = await Promise.all([
+  const [ent, related, watchlist, genreList] = await Promise.all([
     getEntitlement(sb, title.id, country),
     getRelated(sb, title),
     user ? getWatchlistIds(sb) : Promise.resolve(new Set<string>()),
+    getGenres(sb, true),
   ]);
 
+  const genreName = new Map(genreList.map((g) => [g.slug, g.name]));
   const people = title.credits;
   const langs = (l: string[]) => l.map((x) => x.toUpperCase()).join(', ');
 
@@ -57,10 +60,18 @@ export default async function TitlePage({ params }: Props) {
         <div className="hero-content">
           <TitleMeta title={title} full />
           <h1 className={`hero-title${title.title.length > 22 ? ' long' : ''}`}>{title.title}</h1>
-          {title.genres.length > 0 && (
+          {(title.genres.length > 0 || title.vj_slug) && (
             <div className="chips">
+              {title.vj_slug && (
+                <Link href={`/search?vj=${title.vj_slug}`} className="vj-chip">
+                  {title.vj_photo_url
+                    ? <img className="fs-avatar" src={title.vj_photo_url} alt="" />
+                    : <span className="fs-avatar" style={{ background: 'var(--accent)', color: '#fff' }}>{initials(title.vj_name?.replace(/^VJ\s+/i, '') ?? 'VJ')}</span>}
+                  {title.vj_name}
+                </Link>
+              )}
               {title.genres.map((g) => (
-                <Link key={g} href={`/search?genre=${g}`} className="chip">{genreLabel(g)}</Link>
+                <Link key={g} href={`/search?genre=${g}`} className="chip">{genreName.get(g) ?? genreLabel(g)}</Link>
               ))}
             </div>
           )}

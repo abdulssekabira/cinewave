@@ -22,7 +22,7 @@ export function ImageUpload({
   label: string;
   hint: string;
   initial: string | null;
-  shape: 'poster' | 'wide';
+  shape: 'poster' | 'wide' | 'round';
 }) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -38,7 +38,7 @@ export function ImageUpload({
     setBusy(true);
     try {
       const sb = browserClient();
-      const path = `titles/${name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const path = `${shape === 'round' ? 'vjs' : 'titles'}/${name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: upErr } = await sb.storage
         .from('artwork')
         .upload(path, await file.arrayBuffer(), { contentType: file.type, upsert: false });

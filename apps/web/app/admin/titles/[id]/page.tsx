@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getGenres } from '@cinewave/shared';
+import { getGenres, getVjs } from '@cinewave/shared';
 import {
   availability,
   fmtDate,
@@ -27,14 +27,15 @@ export default async function EditTitle({ params, searchParams }: Props) {
   if (!UUID.test(id)) notFound();
   const { sb, isAdmin } = await requireStaff();
 
-  const [{ data: t }, genres, { data: tg }, { data: rightsData }, { data: partnerData }, { data: media }] = await Promise.all([
+  const [{ data: t }, genres, { data: tg }, { data: rightsData }, { data: partnerData }, { data: media }, vjs] = await Promise.all([
     sb.from('titles').select('*').eq('id', id).maybeSingle(),
-    getGenres(sb),
+    getGenres(sb, true),
     sb.from('title_genres').select('genres(slug)').eq('title_id', id),
     sb.from('rights').select('*').eq('title_id', id).order('starts_at', { ascending: false }),
     sb.from('partners').select('*').order('name'),
     sb.from('media_assets').select('status, duration_seconds, error_text')
       .eq('title_id', id).eq('kind', 'feature').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    getVjs(sb, true),
   ]);
   if (!t) notFound();
 
@@ -65,7 +66,7 @@ export default async function EditTitle({ params, searchParams }: Props) {
         <div className="form-msg error">This film is published but viewers can’t see it yet — add an active rights window below.</div>
       )}
 
-      <TitleForm title={title} genres={genres} selectedGenres={selected} />
+      <TitleForm title={title} genres={genres} selectedGenres={selected} vjs={vjs} />
 
       <section className="a-card" style={{ marginTop: 24 }} id="rights">
         <h2>Rights windows</h2>

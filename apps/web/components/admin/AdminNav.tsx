@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const ITEMS = [
   { href: '/admin', label: 'Overview', exact: true },
   { href: '/admin/titles', label: 'Films' },
+  { href: '/admin/categories', label: 'VJs & genres' },
   { href: '/admin/rows', label: 'Home rows' },
   { href: '/admin/partners', label: 'Partners' },
   { href: '/admin/plans', label: 'Plans', adminOnly: true },
