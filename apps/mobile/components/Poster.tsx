@@ -80,6 +80,11 @@ export function PosterCard({ title, width = 124 }: { title: CatalogTitle; width?
             <View style={[styles.poster, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}>
               <Art title={title} />
               <PlanTag title={title} />
+              {title.kind === 'series' && (
+                <View style={styles.seriesTag}>
+                  <Text style={styles.tagText}>{title.episode_count ? `${title.episode_count} PARTS` : 'SERIES'}</Text>
+                </View>
+              )}
             </View>
             <Text style={styles.cardTitle} numberOfLines={1}>{title.title}</Text>
           </>
@@ -93,13 +98,19 @@ export function LandscapeCard({
   title,
   progress,
   width = 196,
+  episode,
 }: {
   title: CatalogTitle;
   progress: number;
   width?: number;
+  episode?: { id: string; number: number; name: string | null } | null;
 }) {
+  // Continue Watching opens the player straight away (at the right part for a series).
+  const href = episode
+    ? { pathname: '/watch/[slug]' as const, params: { slug: title.slug, part: episode.id } }
+    : { pathname: '/watch/[slug]' as const, params: { slug: title.slug } };
   return (
-    <Link href={`/title/${title.slug}`} asChild>
+    <Link href={href} asChild>
       <Pressable style={{ width }} accessibilityRole="link" accessibilityLabel={`${title.title}, ${progress}% watched`}>
         <View style={styles.landscape}>
           <WideArt title={title} />
@@ -112,7 +123,7 @@ export function LandscapeCard({
           </View>
         </View>
         <Text style={styles.cardTitle} numberOfLines={1}>{title.title}</Text>
-        <Text style={styles.cardSub}>{progress}% watched</Text>
+        <Text style={styles.cardSub}>{episode ? `Part ${episode.number} · ` : ''}{progress}% watched</Text>
       </Pressable>
     </Link>
   );
@@ -123,6 +134,10 @@ export const styles = StyleSheet.create({
   generated: { justifyContent: 'flex-end', padding: 12 },
   rule: { width: 22, height: 3, borderRadius: 2, marginBottom: 8 },
   genTitle: { color: '#fff', fontFamily: F.extrabold, fontSize: 16, lineHeight: 19 },
+  seriesTag: {
+    position: 'absolute', bottom: 8, left: 8, backgroundColor: 'rgba(0,0,0,0.72)',
+    borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+  },
   tag: {
     position: 'absolute', top: 8, left: 8, backgroundColor: colors.accent,
     borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,

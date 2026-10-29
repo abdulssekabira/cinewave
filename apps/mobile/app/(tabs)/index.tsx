@@ -70,7 +70,8 @@ export default function Home() {
               renderItem={({ item }) => (
                 <LandscapeCard
                   title={item.title}
-                  progress={progressPercent(item.position_seconds, item.duration_seconds, item.title.runtime_minutes)}
+                  progress={progressPercent(item.position_seconds, item.duration_seconds, item.episode ? null : item.title.runtime_minutes)}
+                  episode={item.episode}
                 />
               )}
             />

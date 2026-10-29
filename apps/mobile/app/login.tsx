@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
 import { Button } from '@/components/ui';
+import { signInWithIdentifier } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { colors, F, radius } from '@/lib/theme';
 
@@ -9,29 +10,39 @@ export default function Login() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
 
   async function submit() {
     setMsg(null);
+    const uname = username.trim().toLowerCase();
+    if (mode === 'signup' && !/^[a-z0-9_.]{3,20}$/.test(uname)) {
+      return setMsg({ kind: 'error', text: 'Usernames are 3–20 characters: letters, numbers, dots or underscores (no spaces).' });
+    }
     if (mode === 'signup' && password.length < 8) {
       return setMsg({ kind: 'error', text: 'Use at least 8 characters for your password.' });
     }
     setBusy(true);
     try {
       if (mode === 'signin') {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-        if (error) return setMsg({ kind: 'error', text: 'Incorrect email or password.' });
+        const err = await signInWithIdentifier(email, password);
+        if (err) return setMsg({ kind: 'error', text: err });
         router.back();
       } else {
+        const { data: free } = await supabase.rpc('username_available', { u: uname });
+        if (!free) return setMsg({ kind: 'error', text: `The username “${uname}” is taken. Try another one.` });
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { data: { display_name: name.trim() || undefined } },
+          options: { data: { display_name: name.trim() || undefined, username: uname } },
         });
-        if (error) return setMsg({ kind: 'error', text: error.message });
-        if (!data.session) return setMsg({ kind: 'ok', text: 'Check your email to confirm, then sign in.' });
+        if (error) {
+          if (/rate limit/i.test(error.message)) return setMsg({ kind: 'error', text: 'Too many sign-up emails in the last hour. Please try again later.' });
+          return setMsg({ kind: 'error', text: error.message });
+        }
+        if (!data.session) return setMsg({ kind: 'ok', text: 'Check your email for the GLE Movies confirmation, then sign in with your username or email.' });
         router.back();
       }
     } finally {
@@ -56,18 +67,31 @@ export default function Login() {
           <>
             <Text style={styles.label}>Name</Text>
             <TextInput style={styles.input} value={name} onChangeText={setName} autoComplete="name" placeholderTextColor={colors.faint} />
+            <Text style={styles.label}>Username</Text>
+            <TextInput
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="username-new"
+              maxLength={20}
+              placeholder="e.g. abdul_ug"
+              placeholderTextColor={colors.faint}
+            />
           </>
         )}
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{mode === 'signin' ? 'Email or username' : 'Email'}</Text>
         <TextInput
           style={styles.input}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
+          autoCorrect={false}
+          autoComplete={mode === 'signin' ? 'username' : 'email'}
+          keyboardType={mode === 'signin' ? 'default' : 'email-address'}
           placeholderTextColor={colors.faint}
-          placeholder="you@example.com"
+          placeholder={mode === 'signin' ? 'Email or username' : 'you@example.com'}
         />
         <Text style={styles.label}>Password</Text>
         <TextInput

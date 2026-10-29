@@ -24,9 +24,13 @@ export default function Profile() {
   const uid = session?.user.id;
   const { data, error, loading, reload } = useAsync(async () => {
     const plans = await getPlans(supabase);
-    if (!uid) return { plans, sub: null, name: null };
-    const [sub, profile] = await Promise.all([getActiveSubscription(supabase), getProfile(supabase, uid)]);
-    return { plans, sub, name: profile?.display_name ?? null };
+    if (!uid) return { plans, sub: null, name: null, username: null as string | null };
+    const [sub, profile, uname] = await Promise.all([
+      getActiveSubscription(supabase),
+      getProfile(supabase, uid),
+      supabase.from('profiles').select('username').eq('id', uid).maybeSingle(),
+    ]);
+    return { plans, sub, name: profile?.display_name ?? null, username: (uname.data?.username as string | null) ?? null };
   }, [uid]);
 
   if (loading && !data) return <Loading />;
@@ -45,7 +49,12 @@ export default function Profile() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{data.name ?? 'GLE Movies member'}</Text>
-              <Text style={styles.email}>{session.user.email}</Text>
+              <Text style={styles.email}>{data.username ? `@${data.username} · ` : ''}{session.user.email}</Text>
+              {data.sub?.current_period_end && (
+                <Text style={styles.email}>
+                  {PLAN_LABEL[current]} active until {new Date(data.sub.current_period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </Text>
+              )}
             </View>
             <View style={styles.planPill}><Text style={styles.planPillText}>{PLAN_LABEL[current]}</Text></View>
           </View>
@@ -76,10 +85,13 @@ export default function Profile() {
             </Text>
           </View>
         ))}
-        <Text style={styles.note}>Pay with MTN MoMo, Airtel Money or card — arriving in a later update.</Text>
+        <Text style={styles.note}>
+          To subscribe or add more time, visit glemovies.com in your browser and pay with MTN MoMo, Airtel Money or card. Your plan then works here straight away.
+        </Text>
 
         {session && (
           <View style={styles.menu}>
+            <MenuItem icon="phone-portrait-outline" label="Devices" onPress={() => router.push('/devices')} />
             <MenuItem icon="time-outline" label="Watchlist" onPress={() => router.push('/watchlist')} />
             <MenuItem icon="search-outline" label="Browse films" onPress={() => router.push('/search')} />
             <MenuItem

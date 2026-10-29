@@ -1,13 +1,20 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   entitlementMessage,
   genreLabel,
   getEntitlement,
+  getEpisodeProgress,
+  getEpisodes,
+  getGenres,
   getProfile,
+  formatRuntime,
+  partLabel,
   getRelated,
   getTitleBySlug,
   getWatchlistIds,
@@ -18,7 +25,7 @@ import { Art, Rating } from '@/components/Poster';
 import { Button, Chip, Empty, ErrorState, IconCircle, Loading, Row } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { colors, F } from '@/lib/theme';
+import { colors, F, img, radius } from '@/lib/theme';
 import { useAsync } from '@/lib/useAsync';
 
 function initials(name: string) {
@@ -36,12 +43,19 @@ export default function TitleScreen() {
     const title = await getTitleBySlug(supabase, slug);
     if (!title) return null;
     const profile = userId ? await getProfile(supabase, userId) : null;
-    const [ent, related, wl] = await Promise.all([
+    const isSeries = title.kind === 'series';
+    const [ent, related, wl, genreList, progress, eps] = await Promise.all([
       getEntitlement(supabase, title.id, profile?.country_code),
       getRelated(supabase, title),
       userId ? getWatchlistIds(supabase) : Promise.resolve(new Set<string>()),
+      getGenres(supabase, true),
+      userId
+        ? supabase.from('watch_progress').select('position_seconds, duration_seconds, completed, episode_id').eq('title_id', title.id).maybeSingle().then((r) => r.data)
+        : Promise.resolve(null),
+      isSeries ? getEpisodes(supabase, title.id).then((e) => e.filter((x) => x.published)) : Promise.resolve([]),
     ]);
-    return { title, ent, related, inList: wl.has(title.id) };
+    const epProgress = userId && isSeries ? await getEpisodeProgress(supabase, eps.map((e) => e.id)) : new Map();
+    return { title, ent, related, inList: wl.has(title.id), genreNames: new Map(genreList.map((g) => [g.slug, g.name])), progress, eps, epProgress };
   }, [slug, userId]);
 
   const [inList, setInList] = useState(false);
@@ -51,8 +65,20 @@ export default function TitleScreen() {
   if (error) return <ErrorState message={error} onRetry={reload} />;
   if (!data) return <Empty icon="film-outline" title="Not available" text="This title may have left the catalogue." />;
 
-  const { title, ent, related } = data;
+  const { title, ent, related, eps, epProgress, progress } = data;
   const heroH = Math.round(height * 0.58);
+  const isSeries = title.kind === 'series';
+  const multi = new Set(eps.map((e) => e.season)).size > 1;
+  const currentEp = isSeries ? eps.find((e) => e.id === progress?.episode_id) ?? eps[0] ?? null : null;
+  const cur = currentEp ? epProgress.get(currentEp.id) : null;
+  const resumeAt = isSeries
+    ? (cur && !cur.completed && cur.position_seconds > 30 ? cur.position_seconds : 0)
+    : (progress && !progress.completed && progress.position_seconds > 30 ? progress.position_seconds : 0);
+  const mmss = (x: number) => {
+    const h = Math.floor(x / 3600), m = Math.floor((x % 3600) / 60), sec = Math.floor(x % 60);
+    return h ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}` : `${m}:${String(sec).padStart(2, '0')}`;
+  };
+  const openPart = (id?: string) => router.push({ pathname: '/watch/[slug]', params: id ? { slug: title.slug, part: id } : { slug: title.slug } });
 
   async function toggleList() {
     if (!userId) return router.push('/login');
@@ -66,15 +92,23 @@ export default function TitleScreen() {
     }
   }
 
-  function watch() {
-    if (ent.can_play) return Alert.alert('Player — Phase 3', 'Playback connects once the video provider is set up.');
+  function watch(partId?: string) {
+    if (ent.can_play) {
+      if (isSeries && !eps.length) return Alert.alert('Coming soon', 'Parts for this series are coming soon.');
+      return openPart(partId ?? currentEp?.id);
+    }
     if (ent.reason === 'sign_in_required') return router.push('/login');
     if (ent.reason === 'upgrade_required') return router.push('/profile');
+    if (ent.reason === 'device_limit') return router.push('/devices');
   }
 
   const watchLabel = ent.can_play
-    ? 'Watch Now'
-    : ent.reason === 'sign_in_required'
+    ? currentEp
+      ? `${resumeAt ? 'Resume' : 'Play'} ${partLabel(currentEp, multi)}${resumeAt ? ` · ${mmss(resumeAt)}` : ''}`
+      : resumeAt ? `Resume ${mmss(resumeAt)}` : 'Watch Now'
+    : ent.reason === 'device_limit'
+      ? 'Manage devices'
+      : ent.reason === 'sign_in_required'
       ? 'Sign in to watch'
       : ent.reason === 'upgrade_required'
         ? `Get ${PLAN_LABEL[ent.required_plan ?? 'standard']}`
@@ -93,9 +127,20 @@ export default function TitleScreen() {
           <View style={styles.heroText}>
             <Text style={styles.h1}>{title.title}</Text>
             <Rating title={title} style={{ marginTop: 8 }} />
-            {title.genres.length > 0 && (
+            {isSeries && (
+              <Text style={styles.seriesTag}>SERIES{eps.length ? ` · ${eps.length} PARTS` : ''}</Text>
+            )}
+            {(title.genres.length > 0 || title.vj_name) && (
               <View style={styles.chips}>
-                {title.genres.map((g) => <Chip key={g} label={genreLabel(g)} />)}
+                {title.vj_name ? (
+                  <Pressable onPress={() => router.push('/search')} style={styles.vj} accessibilityLabel={`VJ ${title.vj_name}`}>
+                    {title.vj_photo_url
+                      ? <Image source={img(title.vj_photo_url)} style={styles.vjImg} />
+                      : <View style={[styles.vjImg, { backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: '#fff', fontFamily: F.bold, fontSize: 10 }}>VJ</Text></View>}
+                    <Text style={styles.vjText}>{title.vj_name}</Text>
+                  </Pressable>
+                ) : null}
+                {title.genres.map((g) => <Chip key={g} label={data.genreNames.get(g) ?? genreLabel(g)} />)}
                 {title.maturity_rating ? <Chip label={title.maturity_rating} /> : null}
               </View>
             )}
@@ -104,6 +149,35 @@ export default function TitleScreen() {
 
         <View style={styles.body}>
           {!ent.can_play && <Text style={styles.notice}>{entitlementMessage(ent.reason, ent.required_plan)}</Text>}
+
+          {isSeries && eps.length > 0 && (
+            <View style={{ marginBottom: 24 }}>
+              <Text style={styles.h2}>Parts</Text>
+              {eps.map((e) => {
+                const pr = epProgress.get(e.id);
+                const dur = pr?.duration_seconds || (e.runtime_minutes ?? 0) * 60;
+                const pct = pr ? (pr.completed ? 100 : dur ? Math.min(100, (pr.position_seconds / dur) * 100) : 0) : 0;
+                const art = img(e.still_url ?? title.backdrop_url ?? title.poster_url);
+                return (
+                  <Pressable key={e.id} onPress={() => watch(e.id)} style={styles.part} accessibilityRole="button" accessibilityLabel={`${partLabel(e, multi)}${e.name ? `, ${e.name}` : ''}`}>
+                    <View style={styles.partThumb}>
+                      {art ? <Image source={art} style={StyleSheet.absoluteFill} contentFit="cover" /> : null}
+                      <View style={styles.partPlay}><Ionicons name="play" size={14} color="#fff" /></View>
+                      {pct > 0 && <View style={styles.partBar}><View style={{ width: `${pct}%`, height: '100%', backgroundColor: colors.accent }} /></View>}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.partLabel}>
+                        {partLabel(e, multi)}
+                        {pr?.completed ? <Text style={styles.partDone}>  ✓ Watched</Text> : null}
+                      </Text>
+                      {e.name ? <Text style={styles.partName} numberOfLines={1}>{e.name}</Text> : null}
+                      {e.runtime_minutes ? <Text style={styles.partMeta}>{formatRuntime(e.runtime_minutes)}</Text> : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
 
           <Text style={styles.h2}>Synopsis</Text>
           <Text style={styles.synopsis}>{title.synopsis ?? 'No synopsis yet.'}</Text>
@@ -147,9 +221,9 @@ export default function TitleScreen() {
             style={{ backgroundColor: colors.surface }}
             onPress={() =>
               Alert.alert(
-                ent.can_download ? 'Downloads — Phase 5' : 'Premium feature',
+                ent.can_download ? 'Downloads are coming soon' : 'Premium feature',
                 ent.can_download
-                  ? 'Offline downloads arrive with the protected player.'
+                  ? 'Protected offline downloads arrive in the next app update.'
                   : 'Offline downloads are included with Premium.',
               )
             }
@@ -158,8 +232,8 @@ export default function TitleScreen() {
         <Button
           label={watchLabel}
           icon={ent.can_play ? 'play' : undefined}
-          onPress={watch}
-          disabled={!ent.can_play && ent.reason !== 'sign_in_required' && ent.reason !== 'upgrade_required'}
+          onPress={() => watch()}
+          disabled={!ent.can_play && !['sign_in_required', 'upgrade_required', 'device_limit'].includes(ent.reason)}
           style={{ flex: 1 }}
         />
         <IconCircle
@@ -179,6 +253,18 @@ const styles = StyleSheet.create({
   heroText: { position: 'absolute', left: 20, right: 20, bottom: 6 },
   h1: { color: '#fff', fontFamily: F.bold, fontSize: 28, lineHeight: 34 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  seriesTag: { color: colors.accent, fontFamily: F.bold, fontSize: 11.5, letterSpacing: 1, marginTop: 8 },
+  vj: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingRight: 12, paddingLeft: 3, paddingVertical: 3, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)' },
+  vjImg: { width: 24, height: 24, borderRadius: 12 },
+  vjText: { color: '#fff', fontFamily: F.semibold, fontSize: 12.5 },
+  part: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingVertical: 8 },
+  partThumb: { width: 128, aspectRatio: 16 / 9, borderRadius: radius.sm, overflow: 'hidden', backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  partPlay: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: '#fff', backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  partBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, backgroundColor: 'rgba(255,255,255,0.25)' },
+  partLabel: { color: colors.text, fontFamily: F.bold, fontSize: 15 },
+  partDone: { color: colors.ok, fontFamily: F.semibold, fontSize: 12 },
+  partName: { color: colors.muted, fontFamily: F.medium, fontSize: 13, marginTop: 2 },
+  partMeta: { color: colors.faint, fontFamily: F.regular, fontSize: 12, marginTop: 2 },
   body: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 26 },
   notice: { color: colors.accent, fontFamily: F.medium, fontSize: 13, marginBottom: 16 },
   h2: { color: colors.text, fontFamily: F.bold, fontSize: 17, marginBottom: 8 },

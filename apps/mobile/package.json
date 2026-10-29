@@ -5,7 +5,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
+    "android": "expo run:android",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -22,7 +22,11 @@
     "expo-linear-gradient": "~58.0.3",
     "expo-linking": "~58.0.14",
     "expo-router": "~58.0.26",
+    "expo-screen-capture": "~58.0.6",
+    "expo-splash-screen": "~58.0.11",
     "expo-status-bar": "~58.0.4",
+    "expo-system-ui": "~58.0.6",
+    "expo-video": "~58.0.12",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.0",
