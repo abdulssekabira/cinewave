@@ -130,7 +130,7 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact, s
             : r2 && state.status === 'pending'
               ? 'Upload not finished'
               : r2 && state.status === 'processing'
-                ? 'Uploaded · waiting for conversion to MP4'
+                ? 'Uploaded · waiting for conversion'
                 : LABEL[state.status]}
         </span>
         {state.status === 'ready' && state.duration ? (
@@ -168,7 +168,7 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact, s
       )}
       {!compact && <p className="a-muted" style={{ marginTop: 12, marginBottom: 0 }}>
         {r2
-          ? 'MP4 works best (plays straight away). Large films can take a while: use Wi‑Fi and keep the phone plugged in. If it stops, choose the same file again to continue. Videos are protected: only viewers allowed by the film’s plan and rights can play them.'
+          ? 'MP4 works best. MKV plays on Android straight away. Large films can take a while: use Wi‑Fi and keep the phone plugged in. If it stops, choose the same file again to continue. Videos are protected: only viewers allowed by the film’s plan and rights can play them.'
           : 'Large films can take a while on mobile data. Wi-Fi is best. Videos are protected: only viewers allowed by the film’s plan and rights can play them.'}
       </p>}
     </div>

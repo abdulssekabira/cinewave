@@ -106,9 +106,10 @@ export async function completeR2Upload(
     const head = await headObject(m.asset_id);
     if (!head || head.size !== Number(m.size_bytes)) return { error: 'The file didn’t arrive completely. Try the upload again.' };
     const dur = durationSeconds && Number.isFinite(durationSeconds) ? Math.round(durationSeconds) : null;
-    // MP4/MOV/WebM play in browsers and phones straight away. Other formats
-    // (e.g. MKV, AVI) wait for the conversion step before viewers can play.
-    const playable = /\.(mp4|m4v|mov|webm)$/i.test(m.asset_id);
+    // MP4/MOV/WebM play everywhere; MKV plays on Android (Chrome and the app),
+    // and the conversion step later makes an MP4 copy for iPhones too.
+    // Other formats (e.g. AVI) wait for the conversion before viewers can play.
+    const playable = /\.(mp4|m4v|mov|webm|mkv)$/i.test(m.asset_id);
     const { error } = await sb.from('media_assets').update({
       status: playable ? 'ready' : 'processing',
       playback_id: playable ? m.asset_id : null,
