@@ -71,6 +71,8 @@ export default async function TitlePage({ params }: Props) {
               <Link href={`/login?next=/title/${title.slug}`} className="btn btn-play"><PlayIcon size={18} /> Sign in to watch</Link>
             ) : ent.reason === 'upgrade_required' ? (
               <Link href="/plans" className="btn btn-accent">Get {PLAN_LABEL[ent.required_plan ?? 'standard']}</Link>
+            ) : ent.reason === 'device_limit' ? (
+              <Link href="/account#devices" className="btn btn-accent">Manage devices</Link>
             ) : (
               <button className="btn btn-play" disabled>Unavailable</button>
             )}

@@ -56,8 +56,8 @@ export function PlanForm({ plan, subscribers }: { plan: Plan; subscribers: numbe
           </select>
         </div>
         <div className="a-field">
-          <label htmlFor={k('s')}>Screens at the same time</label>
-          <input id={k('s')} name="max_streams" type="number" min={1} max={10} className="input" defaultValue={plan.max_streams} />
+          <label htmlFor={k('s')}>Devices allowed</label>
+          <input id={k('s')} name="max_devices" type="number" min={1} max={20} className="input" defaultValue={plan.max_devices ?? ''} placeholder="No limit" />
         </div>
       </div>
 

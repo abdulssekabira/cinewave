@@ -528,3 +528,13 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .period-opt.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .period-opt input { accent-color: var(--accent); width: 18px; height: 18px; }
 .period-opt span { flex: 1; }
+
+.field-hint { color: var(--text-faint); font-size: 12.5px; line-height: 1.4; }
+
+.device-list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
+.device-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.device-list li.over { border-color: rgba(255, 182, 72, .5); }
+.device-list b { font-weight: 600; }
+.device-list small { display: block; color: var(--text-faint); font-size: 12.5px; margin-top: 3px; }
+.device-tag { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px; background: var(--accent-soft); color: var(--accent-hover); vertical-align: 2px; }
+.device-tag.warn { background: rgba(255, 182, 72, .14); color: #ffb648; }

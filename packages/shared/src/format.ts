@@ -44,6 +44,8 @@ export function entitlementMessage(reason: EntitlementReason, required: PlanId |
       return `Sign in and subscribe to ${PLAN_LABEL[required ?? 'standard']} to watch.`;
     case 'upgrade_required':
       return `Available on the ${PLAN_LABEL[required ?? 'standard']} plan.`;
+    case 'device_limit':
+      return 'Your account is already in use on the maximum number of devices. Remove one in Account → Devices to watch here.';
     case 'not_available_in_region':
       return 'Not available in your region.';
     case 'not_found':

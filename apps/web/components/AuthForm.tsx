@@ -28,14 +28,29 @@ export function AuthForm({ mode, next }: { mode: Mode; next: string }) {
       <form action={action}>
         <input type="hidden" name="next" value={next} />
         {mode === 'signup' && (
-          <div className="field">
-            <label htmlFor="name">Name</label>
-            <input id="name" name="name" className="input" autoComplete="name" />
-          </div>
+          <>
+            <div className="field">
+              <label htmlFor="name">Name</label>
+              <input id="name" name="name" className="input" autoComplete="name" />
+            </div>
+            <div className="field">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username" name="username" className="input" required minLength={3} maxLength={20}
+                autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                pattern="[A-Za-z0-9_.]{3,20}" placeholder="e.g. abdul_ug"
+              />
+              <small className="field-hint">You can sign in with this or your email. Letters, numbers, dots and underscores.</small>
+            </div>
+          </>
         )}
         <div className="field">
-          <label htmlFor="email">Email</label>
-          <input id="email" name="email" type="email" required className="input" autoComplete="email" />
+          <label htmlFor="email">{mode === 'signin' ? 'Email or username' : 'Email'}</label>
+          {mode === 'signin' ? (
+            <input id="email" name="email" type="text" required className="input" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+          ) : (
+            <input id="email" name="email" type="email" required className="input" autoComplete="email" />
+          )}
         </div>
         {mode !== 'reset' && (
           <div className="field">

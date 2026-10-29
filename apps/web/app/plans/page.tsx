@@ -10,7 +10,7 @@ function features(p: Plan): string[] {
   f.push(p.id === 'free' ? 'Selected free films' : p.id === 'premium' ? 'Full catalogue incl. Premium' : 'Free + Standard catalogue');
   f.push(p.shows_ads ? 'With ads' : 'No ads');
   f.push(`Up to ${p.max_quality}`);
-  f.push(`${p.max_streams} screen${p.max_streams > 1 ? 's' : ''} at a time`);
+  if (p.max_devices) f.push(`Watch on up to ${p.max_devices} devices`);
   if (p.downloads_allowed) f.push('Offline downloads (Android)');
   return [...f, ...(p.features ?? [])];
 }

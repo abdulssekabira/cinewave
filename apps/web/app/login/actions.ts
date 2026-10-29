@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+import { serverSecret } from '@/lib/server-secret';
+
+const USERNAME = /^[a-z0-9_.]{3,20}$/;
 
 /** The address this site is being viewed on (works on localhost, Vercel and a custom domain). */
 async function siteOrigin() {
@@ -23,11 +26,20 @@ function safeNext(next: FormDataEntryValue | null): string {
 
 export async function signIn(_: AuthState, form: FormData): Promise<AuthState> {
   const sb = await createClient();
-  const { error } = await sb.auth.signInWithPassword({
-    email: String(form.get('email') ?? '').trim(),
-    password: String(form.get('password') ?? ''),
-  });
-  if (error) return { error: 'Incorrect email or password.' };
+  const id = String(form.get('email') ?? '').trim();
+  let email = id;
+  if (!id.includes('@')) {
+    // Signing in with a username: look up the email on the server only.
+    const s = serverSecret();
+    const { data } = s ? await sb.rpc('email_for_username', { s, u: id.toLowerCase() }) : { data: null };
+    if (!data) return { error: 'Incorrect username/email or password.' };
+    email = data as string;
+  }
+  const { error } = await sb.auth.signInWithPassword({ email, password: String(form.get('password') ?? '') });
+  if (error) {
+    if (/confirm/i.test(error.message)) return { error: 'Please confirm your email first. Check your inbox for the GLE Movies email.' };
+    return { error: 'Incorrect username/email or password.' };
+  }
   revalidatePath('/', 'layout');
   redirect(safeNext(form.get('next')));
 }
@@ -35,15 +47,19 @@ export async function signIn(_: AuthState, form: FormData): Promise<AuthState> {
 export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   const email = String(form.get('email') ?? '').trim();
   const password = String(form.get('password') ?? '');
+  const username = String(form.get('username') ?? '').trim().toLowerCase();
+  if (!USERNAME.test(username)) return { error: 'Usernames are 3–20 characters: letters, numbers, dots or underscores (no spaces).' };
   if (password.length < 8) return { error: 'Use at least 8 characters for your password.' };
 
   const sb = await createClient();
+  const { data: free } = await sb.rpc('username_available', { u: username });
+  if (!free) return { error: `The username “${username}” is taken. Try another one.` };
   const { data, error } = await sb.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: `${await siteOrigin()}/auth/confirm`,
-      data: { display_name: String(form.get('name') ?? '').trim() || undefined },
+      data: { display_name: String(form.get('name') ?? '').trim() || undefined, username },
     },
   });
   if (error) {
@@ -75,7 +91,8 @@ export async function updatePassword(_: AuthState, form: FormData): Promise<Auth
 
 export async function signOut() {
   const sb = await createClient();
-  await sb.auth.signOut();
+  // Only this device; other devices stay signed in.
+  await sb.auth.signOut({ scope: 'local' });
   revalidatePath('/', 'layout');
   redirect('/');
 }

@@ -86,7 +86,7 @@ export default function Profile() {
               icon="log-out-outline"
               label="Sign out"
               onPress={async () => {
-                await supabase.auth.signOut();
+                await supabase.auth.signOut({ scope: 'local' });
                 router.replace('/');
               }}
             />

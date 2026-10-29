@@ -27,8 +27,11 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
 
   const quality = t(form, 'max_quality');
   if (!QUALITIES.includes(quality)) return { error: 'Choose a video quality.' };
-  const streams = Number(t(form, 'max_streams'));
-  if (!Number.isInteger(streams) || streams < 1 || streams > 10) return { error: 'Screens must be between 1 and 10.' };
+  const devRaw = t(form, 'max_devices');
+  const devices = devRaw ? Number(devRaw) : null;
+  if (devices !== null && (!Number.isInteger(devices) || devices < 1 || devices > 20)) {
+    return { error: 'Devices allowed must be between 1 and 20, or empty for no limit.' };
+  }
 
   const patch: Record<string, unknown> = {
     name,
@@ -36,7 +39,7 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
     features: t(form, 'features').split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 8),
     shows_ads: form.get('shows_ads') === 'on',
     max_quality: quality,
-    max_streams: streams,
+    max_devices: devices,
     downloads_allowed: form.get('downloads_allowed') === 'on',
   };
 

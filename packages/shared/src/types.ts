@@ -45,6 +45,7 @@ export interface Plan {
   max_quality: string;
   downloads_allowed: boolean;
   max_streams: number;
+  max_devices?: number | null;
   description?: string | null;
   features?: string[];
   active?: boolean;
@@ -77,7 +78,8 @@ export type EntitlementReason =
   | 'not_found'
   | 'not_available_in_region'
   | 'sign_in_required'
-  | 'upgrade_required';
+  | 'upgrade_required'
+  | 'device_limit';
 
 export interface Entitlement {
   can_play: boolean;
