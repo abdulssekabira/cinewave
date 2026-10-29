@@ -13,43 +13,89 @@ function clock(s: number) {
   return h ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}` : `${m}:${String(sec).padStart(2, '0')}`;
 }
 
+type Saved = { pos: number; dur: number; at: number };
+const KEY = (id: string) => `gle:pos:${id}`;
+function readLocal(id: string): Saved | null {
+  try {
+    const raw = localStorage.getItem(KEY(id));
+    return raw ? (JSON.parse(raw) as Saved) : null;
+  } catch {
+    return null;
+  }
+}
+function writeLocal(id: string, v: Saved) {
+  try { localStorage.setItem(KEY(id), JSON.stringify(v)); } catch { /* storage full or blocked */ }
+}
+
 /**
- * Player UI. `src` is a signed playback URL from the video provider
- * (Phase 3). Until then the UI renders and explains that video is not
- * connected yet.
+ * Player. `src` is a short-lived signed stream URL.
+ *
+ * Resume: the position is saved to the account every 5 seconds while
+ * playing (and on pause, leaving or switching apps), and also kept on the
+ * phone itself, so a lost connection or a power cut costs a few seconds at
+ * most. Next time, the viewer is offered "Resume from …" or "Start over".
+ * If the connection drops mid-film, the player keeps retrying and carries
+ * on from the same scene when the network is back.
  */
 export function VideoPlayer({
   title,
   src,
   startAt = 0,
+  startAtUpdated = null,
   signedIn,
 }: {
   title: CatalogTitle;
   src?: string | null;
   startAt?: number;
+  startAtUpdated?: string | null;
   signedIn: boolean;
 }) {
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const seekRef = useRef<HTMLDivElement>(null);
   const lastSaved = useRef(0);
+  const lastLocal = useRef(0);
+  const pending = useRef(false);
+  const target = useRef<number | null>(null);
+  const wasPlaying = useRef(false);
   const ready = useRef<Promise<void> | null>(null);
+  const hlsRef = useRef<{ startLoad(pos?: number): void } | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [time, setTime] = useState(startAt);
+  const [time, setTime] = useState(0);
   const [duration, setDuration] = useState((title.runtime_minutes ?? 0) * 60);
   const [idle, setIdle] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [compact, setCompact] = useState(false);
+  const [resumeAt, setResumeAt] = useState<number | null>(null);
+  const [offline, setOffline] = useState(false);
+
+  // Pick the most recent saved spot: this account's (any device) or this phone's own copy.
+  useEffect(() => {
+    const local = readLocal(title.id);
+    const serverAt = startAtUpdated ? Date.parse(startAtUpdated) : 0;
+    let pos = startAt;
+    if (local && local.at > serverAt + 5000 && !(local.dur && local.pos / local.dur > 0.92)) pos = local.pos;
+    if (pos > 30) setResumeAt(pos);
+  }, [title.id, startAt, startAtUpdated]);
 
   const save = useCallback(
     (force = false) => {
       const v = video.current;
-      if (!signedIn || !v || !src) return;
-      if (!force && Math.abs(v.currentTime - lastSaved.current) < 10) return;
-      lastSaved.current = v.currentTime;
-      saveWatchProgress(title.id, v.currentTime, v.duration || undefined).catch(() => {});
+      if (!v || !src || !(v.currentTime > 0)) return;
+      const pos = v.currentTime;
+      const dur = Number.isFinite(v.duration) ? v.duration : 0;
+      if (force || Math.abs(pos - lastLocal.current) >= 2) {
+        lastLocal.current = pos;
+        writeLocal(title.id, { pos, dur, at: Date.now() });
+      }
+      if (!signedIn) return;
+      if (!force && !pending.current && Math.abs(pos - lastSaved.current) < 5) return;
+      lastSaved.current = pos;
+      saveWatchProgress(title.id, pos, dur || undefined)
+        .then(() => { pending.current = false; })
+        .catch(() => { pending.current = true; });
     },
     [signedIn, src, title.id],
   );
@@ -59,10 +105,27 @@ export function VideoPlayer({
     window.setTimeout(() => setToast(null), 6000);
   };
 
+  const startFrom = (pos: number) => {
+    const v = video.current;
+    setResumeAt(null);
+    if (!v || !src) return;
+    target.current = pos;
+    if (v.readyState >= 1) {
+      v.currentTime = pos;
+      target.current = null;
+    }
+    setTime(pos);
+    Promise.resolve(ready.current).then(() => v.play()).catch(() => {});
+  };
+
   const toggle = useCallback(() => {
     const v = video.current;
     if (!src || !v) {
       flash('This film’s video hasn’t been uploaded yet. Check back soon.');
+      return;
+    }
+    if (resumeAt !== null) {
+      startFrom(resumeAt);
       return;
     }
     if (v.paused) {
@@ -73,7 +136,10 @@ export function VideoPlayer({
           flash(`Playback failed${e instanceof Error && e.name ? ` (${e.name})` : ''}. Check your connection and try again.`);
         });
     } else v.pause();
-  }, [src]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, resumeAt]);
+
+
 
   const seekTo = (clientX: number) => {
     const el = seekRef.current;
@@ -142,18 +208,62 @@ export function VideoPlayer({
         v.src = src;
         return;
       }
-      const h = new Hls({ capLevelToPlayerSize: true });
+      const h = new Hls({
+        capLevelToPlayerSize: true,
+        // Patient with slow or patchy mobile data.
+        fragLoadPolicy: { default: { maxTimeToFirstByteMs: 15000, maxLoadTimeMs: 60000, timeoutRetry: { maxNumRetry: 6, retryDelayMs: 1000, maxRetryDelayMs: 8000 }, errorRetry: { maxNumRetry: 8, retryDelayMs: 1000, maxRetryDelayMs: 8000 } } },
+      });
+      let retry: number | undefined;
       h.on(Hls.Events.ERROR, (_e, d) => {
         if (!d.fatal) return;
+        if (d.type === Hls.ErrorTypes.NETWORK_ERROR && d.response?.code !== 403) {
+          // Connection lost: keep the spot and keep trying until it's back.
+          setOffline(true);
+          window.clearTimeout(retry);
+          retry = window.setTimeout(() => h.startLoad(v.currentTime || -1), 4000);
+          return;
+        }
+        if (d.type === Hls.ErrorTypes.MEDIA_ERROR) { h.recoverMediaError(); return; }
         const code = d.response?.code ? ` (${d.response.code})` : '';
-        flash(`This video could not be loaded: ${d.details}${code}`);
+        flash(d.response?.code === 403
+          ? 'This viewing link has expired. Refresh the page to carry on from where you stopped.'
+          : `This video could not be loaded: ${d.details}${code}`);
       });
+      h.on(Hls.Events.FRAG_LOADED, () => setOffline(false));
       h.loadSource(src);
       h.attachMedia(v);
       hls = h;
+      hlsRef.current = h;
     }).catch(() => { if (!cancelled) v.src = src; });
-    return () => { cancelled = true; hls?.destroy(); };
+    return () => { cancelled = true; hls?.destroy(); hlsRef.current = null; };
   }, [src]);
+
+  // Back online: resume loading from the same scene and send any unsaved position.
+  useEffect(() => {
+    const onOnline = () => {
+      const v = video.current;
+      if (pending.current) save(true);
+      if (!v || !src) return;
+      if (hlsRef.current) hlsRef.current.startLoad(v.currentTime || -1);
+      else if (v.error) {
+        const pos = v.currentTime;
+        v.load();
+        target.current = pos;
+        if (wasPlaying.current) v.play().catch(() => {});
+      }
+      setOffline(false);
+    };
+    const onOffline = () => { save(true); setOffline(true); };
+    const onHide = () => { if (document.visibilityState === 'hidden') save(true); };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+  }, [save, src]);
 
   // Compact layout on small players.
   useEffect(() => {
@@ -188,14 +298,22 @@ export function VideoPlayer({
           playsInline
           preload="metadata"
           onClick={toggle}
-          onPlay={() => setPlaying(true)}
-          onPause={() => { setPlaying(false); save(true); }}
+          onPlay={() => { setPlaying(true); wasPlaying.current = true; }}
+          onPause={() => { setPlaying(false); wasPlaying.current = false; save(true); }}
           onTimeUpdate={(e) => { setTime(e.currentTarget.currentTime); save(); }}
+          onPlaying={() => setOffline(false)}
           onLoadedMetadata={(e) => {
             setDuration(e.currentTarget.duration);
-            if (startAt) e.currentTarget.currentTime = startAt;
+            if (target.current !== null) {
+              e.currentTarget.currentTime = target.current;
+              target.current = null;
+            }
           }}
-          onError={(e) => flash(`This video could not be loaded (code ${e.currentTarget.error?.code ?? '?'}).`)}
+          onEnded={() => save(true)}
+          onError={(e) => {
+            if (!navigator.onLine) { setOffline(true); return; }
+            flash(`This video could not be loaded (code ${e.currentTarget.error?.code ?? '?'}).`);
+          }}
         />
       ) : null}
       {(!src || !playing) && (
@@ -277,10 +395,25 @@ export function VideoPlayer({
         </div>
       </div>
 
-      {!playing && (
+      {!playing && resumeAt !== null && src ? (
+        <div className="player-resume" role="dialog" aria-label="Continue watching">
+          <p>You stopped at <b>{clock(resumeAt)}</b>{duration ? <> of {clock(duration)}</> : null}</p>
+          <div className="player-resume-actions">
+            <button className="btn btn-play" onClick={() => startFrom(resumeAt)} autoFocus>
+              <PlayIcon size={18} /> Resume from {clock(resumeAt)}
+            </button>
+            <button className="btn btn-gray" onClick={() => startFrom(0)}>Start over</button>
+          </div>
+        </div>
+      ) : !playing && (
         <button className="player-center" onClick={toggle} aria-label="Play">
           <PlayIcon size={30} style={{ marginLeft: 4 }} />
         </button>
+      )}
+      {offline && src && (
+        <div className="player-offline" role="status">
+          Connection lost. Reconnecting… You’ll continue from {clock(time)}.
+        </div>
       )}
       {toast && <div className="player-toast" role="status">{toast}</div>}
     </div>

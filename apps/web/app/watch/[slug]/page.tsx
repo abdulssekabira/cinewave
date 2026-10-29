@@ -36,12 +36,14 @@ export default async function WatchPage({ params }: Props) {
   }
 
   let startAt = 0;
+  let startAtUpdated: string | null = null;
   if (user) {
     const { data } = await sb
       .from('watch_progress')
-      .select('position_seconds, completed')
+      .select('position_seconds, completed, updated_at')
       .eq('title_id', title.id)
       .maybeSingle();
+    if (data) startAtUpdated = data.updated_at;
     if (data && !data.completed) startAt = data.position_seconds;
   }
 
@@ -50,7 +52,7 @@ export default async function WatchPage({ params }: Props) {
       <div style={{ maxWidth: 1200, margin: '0 auto 16px' }}>
         <Link href={`/title/${slug}`} className="btn btn-gray btn-small"><BackIcon size={18} /> Back</Link>
       </div>
-      <VideoPlayer title={title} src={src} startAt={startAt} signedIn={Boolean(user)} />
+      <VideoPlayer title={title} src={src} startAt={startAt} startAtUpdated={startAtUpdated} signedIn={Boolean(user)} />
     </div>
   );
 }

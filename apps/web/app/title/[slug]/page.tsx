@@ -41,13 +41,22 @@ export default async function TitlePage({ params }: Props) {
 
   const profile = user ? await getProfile(sb, user.id) : null;
   const country = await viewerCountry(profile?.country_code);
-  const [ent, related, watchlist, genreList] = await Promise.all([
+  const [ent, related, watchlist, genreList, progress] = await Promise.all([
     getEntitlement(sb, title.id, country),
     getRelated(sb, title),
     user ? getWatchlistIds(sb) : Promise.resolve(new Set<string>()),
     getGenres(sb, true),
+    user
+      ? sb.from('watch_progress').select('position_seconds, duration_seconds, completed').eq('title_id', title.id).maybeSingle().then((r) => r.data)
+      : Promise.resolve(null),
   ]);
 
+  const resumeAt = progress && !progress.completed && progress.position_seconds > 30 ? progress.position_seconds : 0;
+  const total = progress?.duration_seconds || (title.runtime_minutes ?? 0) * 60;
+  const mmss = (s: number) => {
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = Math.floor(s % 60);
+    return h ? `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}` : `${m}:${String(x).padStart(2, '0')}`;
+  };
   const genreName = new Map(genreList.map((g) => [g.slug, g.name]));
   const people = title.credits;
   const langs = (l: string[]) => l.map((x) => x.toUpperCase()).join(', ');
@@ -77,7 +86,9 @@ export default async function TitlePage({ params }: Props) {
           )}
           <div className="hero-actions">
             {ent.can_play ? (
-              <Link href={`/watch/${title.slug}`} className="btn btn-play"><PlayIcon size={18} /> Play</Link>
+              <Link href={`/watch/${title.slug}`} className="btn btn-play">
+                <PlayIcon size={18} /> {resumeAt ? `Resume ${mmss(resumeAt)}` : 'Play'}
+              </Link>
             ) : ent.reason === 'sign_in_required' ? (
               <Link href={`/login?next=/title/${title.slug}`} className="btn btn-play"><PlayIcon size={18} /> Sign in to watch</Link>
             ) : ent.reason === 'upgrade_required' ? (
@@ -93,6 +104,11 @@ export default async function TitlePage({ params }: Props) {
               <Link href={`/login?next=/title/${title.slug}`} className="btn btn-gray"><PlusIcon size={20} /> My List</Link>
             )}
           </div>
+          {ent.can_play && resumeAt > 0 && total > 0 && (
+            <div className="resume-meter" aria-label={`Watched ${Math.round((resumeAt / total) * 100)}%`}>
+              <div style={{ width: `${Math.min(100, (resumeAt / total) * 100)}%` }} />
+            </div>
+          )}
           {!ent.can_play && <p className="hero-notice">{entitlementMessage(ent.reason, ent.required_plan)}</p>}
           {title.downloadable && ent.can_play && (
             <p className="hero-notice" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
