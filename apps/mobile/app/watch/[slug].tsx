@@ -174,7 +174,7 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
   return (
     <View style={styles.wrap}>
       <StatusBar hidden />
-      <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls fullscreenOptions={{ enable: true }} />
+      <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls fullscreenOptions={{ enable: true, orientation: 'landscape' }} />
 
       {!playing && (
         <View style={[styles.top, { paddingTop: insets.top + 8, paddingLeft: insets.left + 12, paddingRight: insets.right + 12 }]}>
