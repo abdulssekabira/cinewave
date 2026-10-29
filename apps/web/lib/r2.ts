@@ -9,28 +9,54 @@ import { AwsClient } from 'aws4fetch';
  * R2_BUCKET (e.g. "gle-movies").
  */
 
+/**
+ * Tolerates small pasting slips in Vercel: spaces/new lines, the full
+ * "S3 API" link instead of the Account ID, or a bucket name with slashes.
+ */
+const env = (k: string) => (process.env[k] ?? '').trim().replace(/^["']|["']$/g, '');
+const accountId = () => {
+  const raw = env('R2_ACCOUNT_ID');
+  return /[0-9a-f]{32}/i.exec(raw)?.[0]?.toLowerCase() ?? raw;
+};
+const bucket = () => env('R2_BUCKET').replace(/^.*\//, '').replace(/\/+$/, '') || env('R2_BUCKET');
+
 export function r2Configured() {
-  return Boolean(process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY && process.env.R2_BUCKET);
+  return Boolean(env('R2_ACCOUNT_ID') && env('R2_ACCESS_KEY_ID') && env('R2_SECRET_ACCESS_KEY') && env('R2_BUCKET'));
+}
+
+/** Plain-language check of the settings, for the admin page. */
+export function r2SettingsProblem(): string | null {
+  if (!r2Configured()) return 'Cloudflare storage isn’t connected yet: add the R2 keys in Vercel, then redeploy.';
+  if (!/^[0-9a-f]{32}$/.test(accountId())) return 'R2_ACCOUNT_ID in Vercel doesn’t look right. It should be the 32-character Account ID from the R2 page.';
+  if (!/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(bucket())) return 'R2_BUCKET in Vercel should be just the bucket name: gle-movies';
+  return null;
 }
 
 let client: AwsClient | null = null;
 function aws() {
-  if (!r2Configured()) throw new Error('Cloudflare storage isn’t connected yet: add the R2 keys in Vercel, then redeploy.');
+  const problem = r2SettingsProblem();
+  if (problem) throw new Error(problem);
   client ??= new AwsClient({
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    accessKeyId: env('R2_ACCESS_KEY_ID'),
+    secretAccessKey: env('R2_SECRET_ACCESS_KEY'),
     service: 's3',
     region: 'auto',
   });
   return client;
 }
 
-const base = () => `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${process.env.R2_BUCKET}`;
-const bucketUrl = () => `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${process.env.R2_BUCKET}`;
+const base = () => `https://${accountId()}.r2.cloudflarestorage.com/${bucket()}`;
+const bucketUrl = base;
 const objectUrl = (key: string) => `${base()}/${key.split('/').map(encodeURIComponent).join('/')}`;
 
 async function call(url: string, init: RequestInit = {}) {
-  const res = await aws().fetch(url, init);
+  let res: Response;
+  try {
+    res = await aws().fetch(url, init);
+  } catch (e) {
+    const problem = r2SettingsProblem();
+    throw new Error(problem ?? `Couldn’t reach Cloudflare storage (${e instanceof Error ? (e.cause as Error | undefined)?.message ?? e.message : 'network error'}).`);
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     const code = /<Code>([^<]+)<\/Code>/.exec(body)?.[1];
@@ -112,6 +138,7 @@ export async function completeMultipart(key: string, uploadId: string, parts: { 
 export async function headObject(key: string): Promise<{ size: number } | null> {
   const res = await aws().fetch(objectUrl(key), { method: 'HEAD' });
   if (res.status === 404) return null;
+  if (res.status === 403) throw new Error('Cloudflare storage: AccessDenied');
   if (!res.ok) throw new Error(`Cloudflare storage: ${res.status}`);
   return { size: Number(res.headers.get('content-length') ?? 0) };
 }
