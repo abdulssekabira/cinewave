@@ -24,6 +24,7 @@ import {
 import { Art, Rating } from '@/components/Poster';
 import { Button, Chip, Empty, ErrorState, IconCircle, Loading, Row } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { isPlayable, startDownload, useDownloads, type Download } from '@/lib/downloads';
 import { supabase } from '@/lib/supabase';
 import { colors, F, img, radius } from '@/lib/theme';
 import { useAsync } from '@/lib/useAsync';
@@ -60,6 +61,7 @@ export default function TitleScreen() {
 
   const [inList, setInList] = useState(false);
   useEffect(() => setInList(Boolean(data?.inList)), [data?.inList]);
+  const myDownloads = useDownloads(userId);
 
   if (loading && !data) return <Loading />;
   if (error) return <ErrorState message={error} onRetry={reload} />;
@@ -91,6 +93,30 @@ export default function TitleScreen() {
       Alert.alert('Couldn’t update your watchlist', 'Check your connection and try again.');
     }
   }
+
+  const dlFor = (episodeId: string | null): Download | null =>
+    myDownloads.find((d) => d.titleId === title.id && d.episodeId === episodeId) ?? null;
+
+  async function download(episodeId: string | null) {
+    if (!userId) return router.push('/login');
+    if (!ent.can_download) {
+      if (ent.reason === 'device_limit') return router.push('/devices');
+      return Alert.alert('Premium feature', 'Offline downloads are included with Premium. Visit glemovies.com to upgrade.');
+    }
+    const have = dlFor(episodeId);
+    if (have?.status === 'done' && isPlayable(have)) return router.push({ pathname: '/offline/[id]', params: { id: have.id } });
+    if (have?.status === 'downloading') return router.push('/downloads');
+    if (isSeries && !episodeId) return Alert.alert('Choose a part', 'Tap the download icon next to the part you want.');
+    const msg = await startDownload(userId, title.slug, episodeId);
+    if (msg) Alert.alert('Download', msg);
+    else Alert.alert('Downloading', 'You can follow it in the Downloads tab. Keep the app open until it finishes.', [
+      { text: 'OK' },
+      { text: 'Open Downloads', onPress: () => router.push('/downloads') },
+    ]);
+  }
+
+  const dlIcon = (d: Download | null) =>
+    d?.status === 'done' ? 'checkmark-circle' : d?.status === 'downloading' ? 'cloud-download' : 'download-outline';
 
   function watch(partId?: string) {
     if (ent.can_play) {
@@ -173,6 +199,21 @@ export default function TitleScreen() {
                       {e.name ? <Text style={styles.partName} numberOfLines={1}>{e.name}</Text> : null}
                       {e.runtime_minutes ? <Text style={styles.partMeta}>{formatRuntime(e.runtime_minutes)}</Text> : null}
                     </View>
+                    {title.downloadable && (
+                      <Pressable
+                        onPress={() => download(e.id)}
+                        hitSlop={10}
+                        style={styles.partDl}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Download ${partLabel(e, multi)}`}
+                      >
+                        <Ionicons
+                          name={dlIcon(dlFor(e.id))}
+                          size={22}
+                          color={dlFor(e.id)?.status === 'done' ? colors.ok : ent.can_download ? colors.text : colors.faint}
+                        />
+                      </Pressable>
+                    )}
                   </Pressable>
                 );
               })}
@@ -213,20 +254,14 @@ export default function TitleScreen() {
 
       {/* Bottom action bar */}
       <View style={[styles.actionBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-        {title.downloadable && (
+        {title.downloadable && !isSeries && (
           <IconCircle
-            icon="download-outline"
+            icon={dlIcon(dlFor(null))}
             label={ent.can_download ? 'Download' : 'Downloads need Premium'}
             size={52}
-            style={{ backgroundColor: colors.surface }}
-            onPress={() =>
-              Alert.alert(
-                ent.can_download ? 'Downloads are coming soon' : 'Premium feature',
-                ent.can_download
-                  ? 'Protected offline downloads arrive in the next app update.'
-                  : 'Offline downloads are included with Premium.',
-              )
-            }
+            active={dlFor(null)?.status === 'done'}
+            style={dlFor(null)?.status === 'done' ? undefined : { backgroundColor: colors.surface }}
+            onPress={() => download(null)}
           />
         )}
         <Button
@@ -262,6 +297,7 @@ const styles = StyleSheet.create({
   partPlay: { width: 30, height: 30, borderRadius: 15, borderWidth: 1.5, borderColor: '#fff', backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   partBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 3, backgroundColor: 'rgba(255,255,255,0.25)' },
   partLabel: { color: colors.text, fontFamily: F.bold, fontSize: 15 },
+  partDl: { padding: 6 },
   partDone: { color: colors.ok, fontFamily: F.semibold, fontSize: 12 },
   partName: { color: colors.muted, fontFamily: F.medium, fontSize: 13, marginTop: 2 },
   partMeta: { color: colors.faint, fontFamily: F.regular, fontSize: 12, marginTop: 2 },

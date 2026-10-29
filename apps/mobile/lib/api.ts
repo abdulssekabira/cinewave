@@ -1,12 +1,14 @@
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
 
+import { SITE } from './config';
+
 /** The GLE Movies website, which issues stream links and handles username sign-in. */
-export const SITE = (process.env.EXPO_PUBLIC_SITE_URL || 'https://www.glemovies.com').replace(/\/$/, '');
+export { SITE };
 
-const UA = `GLE Movies app on ${Platform.OS === 'android' ? 'Android' : Platform.OS} (okhttp)`;
+export const UA = `GLE Movies app on ${Platform.OS === 'android' ? 'Android' : Platform.OS} (okhttp)`;
 
-async function authHeaders(): Promise<Record<string, string>> {
+export async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   return token ? { Authorization: `Bearer ${token}` } : {};

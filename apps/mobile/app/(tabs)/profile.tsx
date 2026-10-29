@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatPrice, getActiveSubscription, getPlans, getProfile, PLAN_LABEL } from '@cinewave/shared';
 import { Button, ErrorState, Loading, ScreenTitle, type IconName } from '@/components/ui';
@@ -97,10 +97,19 @@ export default function Profile() {
             <MenuItem
               icon="log-out-outline"
               label="Sign out"
-              onPress={async () => {
-                await supabase.auth.signOut({ scope: 'local' });
-                router.replace('/');
-              }}
+              onPress={() =>
+                Alert.alert('Sign out?', 'Downloads on this phone will be deleted.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Sign out',
+                    style: 'destructive',
+                    onPress: async () => {
+                      await supabase.auth.signOut({ scope: 'local' });
+                      router.replace('/');
+                    },
+                  },
+                ])
+              }
             />
           </View>
         )}

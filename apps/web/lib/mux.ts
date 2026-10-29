@@ -46,6 +46,8 @@ export async function createDirectUpload(titleId: string, origin: string) {
         playback_policies: ['signed'],
         video_quality: 'basic',
         passthrough: titleId,
+        // A small MP4 copy for protected offline downloads in the app.
+        static_renditions: [{ resolution: '480p' }],
       },
     }),
   });
@@ -62,7 +64,37 @@ export async function getAsset(id: string) {
     duration?: number;
     playback_ids?: { id: string; policy: string }[];
     errors?: { messages?: string[] };
+    static_renditions?: { files?: StaticRendition[] };
   }>(`/video/v1/assets/${id}`);
+}
+
+type StaticRendition = { id?: string; name?: string; resolution?: string; status?: string; filesize?: string | number };
+
+const DOWNLOAD_SIZES = ['480p', '360p', '270p'];
+
+/**
+ * The MP4 file used for offline downloads. If the video doesn't have one
+ * yet (older uploads), asks Mux to make it and reports 'preparing'.
+ */
+export async function downloadRendition(assetId: string): Promise<
+  { status: 'ready'; name: string; bytes: number | null } | { status: 'preparing' } | { status: 'unavailable' }
+> {
+  const a = await getAsset(assetId);
+  const files = a.static_renditions?.files ?? [];
+  const mp4 = (f: StaticRendition) => (f.name ?? '').endsWith('.mp4');
+  for (const res of DOWNLOAD_SIZES) {
+    const f = files.find((x) => mp4(x) && (x.resolution === res || x.name === `${res}.mp4`));
+    if (f?.status === 'ready') return { status: 'ready', name: f.name!, bytes: f.filesize ? Number(f.filesize) : null };
+    if (f && f.status !== 'skipped' && f.status !== 'errored' && f.status !== 'deleted') return { status: 'preparing' };
+  }
+  const anyReady = files.find((x) => mp4(x) && x.status === 'ready');
+  if (anyReady) return { status: 'ready', name: anyReady.name!, bytes: anyReady.filesize ? Number(anyReady.filesize) : null };
+  // Ask for the next size not yet tried (a size is skipped if the film is smaller).
+  const tried = new Set(files.map((x) => x.resolution ?? (x.name ?? '').replace('.mp4', '')));
+  const next = DOWNLOAD_SIZES.find((r) => !tried.has(r));
+  if (!next) return { status: 'unavailable' };
+  await mux(`/video/v1/assets/${assetId}/static-renditions`, { method: 'POST', body: JSON.stringify({ resolution: next }) });
+  return { status: 'preparing' };
 }
 
 // ---------------------------------------------------------- signing key
@@ -108,12 +140,7 @@ export async function ensureSigningKey(sb: SupabaseClient): Promise<void> {
 
 const b64url = (b: Buffer | string) => Buffer.from(b).toString('base64url');
 
-/** Short-lived stream URL for a signed playback ID, or null if not possible. */
-export async function signedStreamUrl(
-  sb: SupabaseClient,
-  playbackId: string,
-  opts: { maxResolution?: string; hours?: number } = {},
-): Promise<string | null> {
+async function playbackToken(sb: SupabaseClient, playbackId: string, hours: number, extra: Record<string, unknown> = {}) {
   if (!muxConfigured()) return null;
   const key = await readSigningKey(sb);
   if (!key) return null;
@@ -121,10 +148,26 @@ export async function signedStreamUrl(
   const claims: Record<string, unknown> = {
     sub: playbackId,
     aud: 'v',
-    exp: Math.floor(Date.now() / 1000) + 3600 * (opts.hours ?? 6),
+    exp: Math.floor(Date.now() / 1000) + Math.round(3600 * hours),
+    ...extra,
   };
-  if (opts.maxResolution) claims.max_resolution = opts.maxResolution;
   const unsigned = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(claims))}`;
   const sig = createSign('RSA-SHA256').update(unsigned).sign(key.pem);
-  return `https://stream.mux.com/${playbackId}.m3u8?token=${unsigned}.${b64url(sig)}`;
+  return `${unsigned}.${b64url(sig)}`;
+}
+
+/** Short-lived stream URL for a signed playback ID, or null if not possible. */
+export async function signedStreamUrl(
+  sb: SupabaseClient,
+  playbackId: string,
+  opts: { maxResolution?: string; hours?: number } = {},
+): Promise<string | null> {
+  const token = await playbackToken(sb, playbackId, opts.hours ?? 6, opts.maxResolution ? { max_resolution: opts.maxResolution } : {});
+  return token ? `https://stream.mux.com/${playbackId}.m3u8?token=${token}` : null;
+}
+
+/** One-time link (valid 3 hours) to fetch the download MP4 into the app. */
+export async function signedFileUrl(sb: SupabaseClient, playbackId: string, fileName: string): Promise<string | null> {
+  const token = await playbackToken(sb, playbackId, 3);
+  return token ? `https://stream.mux.com/${playbackId}/${fileName}?token=${token}` : null;
 }

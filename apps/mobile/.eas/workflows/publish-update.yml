@@ -1,0 +1,20 @@
+# Sends app changes (screens, player, text) to phones that already have
+# GLE Movies installed, without a new build. Runs on every push to main.
+# Changes that need a new build (new phone features, icon, app name, Expo
+# upgrade) also need the app "version" in app.json raised, so old builds
+# never receive code they can't run.
+name: Publish app update
+
+on:
+  push:
+    branches: ['main']
+
+jobs:
+  update_preview:
+    name: Update test builds
+    type: update
+    environment: preview
+    params:
+      channel: preview
+      platform: android
+      message: Automatic update from GitHub

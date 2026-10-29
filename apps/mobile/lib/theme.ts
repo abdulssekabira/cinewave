@@ -1,3 +1,4 @@
+import { SITE } from './config';
 import { imageUrl } from '@cinewave/shared';
 
 export const colors = {
@@ -29,5 +30,5 @@ export const radius = { sm: 10, md: 14, lg: 20, pill: 999 };
 
 /** Full URL for an image path stored in the catalogue. */
 export function img(path: string | null | undefined): string | null {
-  return imageUrl(path, process.env.EXPO_PUBLIC_SITE_URL);
+  return imageUrl(path, SITE);
 }

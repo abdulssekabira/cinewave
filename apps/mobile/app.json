@@ -3,7 +3,7 @@
     "name": "GLE Movies",
     "slug": "gle-movies",
     "scheme": "glemovies",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "default",
     "userInterfaceStyle": "dark",
     "android": {
@@ -49,6 +49,14 @@
       "eas": {
         "projectId": "fbb90d1f-4899-4f7e-ae27-f38acf40a822"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/fbb90d1f-4899-4f7e-ae27-f38acf40a822",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }

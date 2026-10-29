@@ -40,6 +40,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="title/[slug]" options={{ headerShown: false }} />
           <Stack.Screen name="watch/[slug]" options={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: '#000' } }} />
+          <Stack.Screen name="offline/[id]" options={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: '#000' } }} />
           <Stack.Screen name="search" options={{ title: 'Search' }} />
           <Stack.Screen name="devices" options={{ title: 'Devices' }} />
           <Stack.Screen name="login" options={{ title: '', presentation: 'modal' }} />
