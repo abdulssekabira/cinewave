@@ -154,7 +154,7 @@ export function VideoUpload({ titleId, episodeId, initial, connected, compact, s
       {!connected ? (
         <p className="a-muted">Video storage isn’t connected yet. Add the Cloudflare R2 keys in Vercel to turn on uploads.</p>
       ) : (
-        <label className={`btn ${state.status === 'ready' ? 'btn-gray' : 'btn-red'} btn-small`} aria-disabled={busy}>
+        <label className={`btn ${state.status === 'ready' ? 'btn-gray' : 'btn-accent'} btn-small`} aria-disabled={busy}>
           {state.status === 'ready' || state.status === 'processing' ? 'Replace video' : state.status === 'pending' && r2 ? 'Continue upload' : 'Upload video'}
           <input
             ref={input}

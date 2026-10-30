@@ -25,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="site-footer">
           <span>© {new Date().getFullYear()} GLE Movies · by Gamers Loft Entertainment</span>
           <Link href="/plans">Plans</Link>
+          <Link href="/app">Get the Android app</Link>
           <span>Terms</span>
           <span>Privacy</span>
           <span>Copyright &amp; takedown</span>

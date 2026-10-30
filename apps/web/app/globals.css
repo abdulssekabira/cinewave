@@ -681,3 +681,9 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .ep-body { padding: 4px 14px 16px; border-top: 1px solid var(--line); display: grid; gap: 18px; }
 .ep-sub { margin: 12px 0 10px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
 .ep-add { border-top: 1px solid var(--line); padding-top: 16px; }
+
+/* Get the app page */
+.app-steps { background: var(--surface, #1a1a1f); border-radius: 16px; padding: 20px 22px; }
+.app-steps h2 { font-size: 18px; margin: 0 0 10px; }
+.app-steps ol { margin: 0 0 12px; padding-left: 20px; line-height: 1.6; }
+.app-steps li { margin-bottom: 8px; }

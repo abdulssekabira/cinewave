@@ -87,7 +87,7 @@ export default async function Users({ searchParams }: Props) {
                       <span className="a-muted">Admin</span>
                     ) : (
                       <form action={setUploader.bind(null, u.id, !u.roles.includes('editor'))}>
-                        <button className={`btn btn-small ${u.roles.includes('editor') ? 'btn-gray' : 'btn-red'}`}>
+                        <button className={`btn btn-small ${u.roles.includes('editor') ? 'btn-gray' : 'btn-accent'}`}>
                           {u.roles.includes('editor') ? 'Remove uploader' : 'Make uploader'}
                         </button>
                       </form>

@@ -61,3 +61,21 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
   revalidatePath('/plans');
   return { message: 'Saved. The Plans page shows the new details now.' };
 }
+
+/** The Android app link shown on glemovies.com/app. */
+export async function saveAppSettings(_: FormState, form: FormData): Promise<FormState> {
+  const { sb, isAdmin } = await requireStaff();
+  if (!isAdmin) return { error: 'Only the owner can change this.' };
+  const url = t(form, 'android_apk_url');
+  if (url && !/^https:\/\/\S+$/i.test(url)) return { error: 'The download link must start with https://' };
+  const rows = [
+    { key: 'android_apk_url', value: url || null },
+    { key: 'android_version', value: t(form, 'android_version').slice(0, 20) || null },
+    { key: 'android_note', value: t(form, 'android_note').slice(0, 200) || null },
+  ].map((r) => ({ ...r, updated_at: new Date().toISOString() }));
+  const { error } = await sb.from('site_settings').upsert(rows, { onConflict: 'key' });
+  if (error) return { error: error.message };
+  revalidatePath('/app');
+  revalidatePath('/admin/plans');
+  return { message: 'Saved. glemovies.com/app now uses this link.' };
+}

@@ -5,17 +5,20 @@ import { ensureServerSecret } from '@/lib/server-secret';
 import { pesapalSandbox } from '@/lib/pesapal';
 import { formatPrice } from '@cinewave/shared';
 import { PlanForm } from '@/components/admin/PlanForm';
+import { AppLinkForm } from '@/components/admin/AppLinkForm';
 
 export default async function AdminPlans() {
   const { sb, isAdmin } = await requireStaff();
   if (!isAdmin) notFound();
-  const [{ data: p }, { data: subs }, { data: pays }, ready] = await Promise.all([
+  const [{ data: p }, { data: subs }, { data: pays }, ready, { data: settings }] = await Promise.all([
     sb.from('plans').select('*').order('rank'),
     sb.from('subscriptions').select('plan_id').eq('status', 'active'),
     sb.from('payments').select('merchant_ref, plan_id, period, amount, currency, status, method, sandbox, created_at')
       .order('created_at', { ascending: false }).limit(25),
     ensureServerSecret(sb),
+    sb.from('site_settings').select('key, value'),
   ]);
+  const setting = (k: string) => (settings ?? []).find((r) => r.key === k)?.value ?? '';
   const sandbox = pesapalSandbox();
   const plans = (p ?? []) as Plan[];
   const count = (id: string) => (subs ?? []).filter((s) => s.plan_id === id).length;
@@ -33,6 +36,13 @@ export default async function AdminPlans() {
       <div className="a-plan-grid">
         {plans.map((plan) => <PlanForm key={plan.id} plan={plan} subscribers={count(plan.id)} />)}
       </div>
+      <section className="a-card" style={{ marginTop: 24 }} id="app">
+        <h2>Android app download</h2>
+        <p className="a-muted" style={{ marginTop: -4 }}>
+          Share <b>glemovies.com/app</b>. It gives people this file and shows how to install it.
+        </p>
+        <AppLinkForm url={setting('android_apk_url')} version={setting('android_version')} note={setting('android_note')} />
+      </section>
       <section className="a-card" style={{ marginTop: 24 }}>
         <div className="a-row" style={{ justifyContent: 'space-between' }}>
           <h2 style={{ margin: 0 }}>Payments</h2>
