@@ -60,6 +60,10 @@ export async function getUpload(id: string) {
   return mux<{ id: string; status: string; asset_id?: string; error?: { message?: string } }>(`/video/v1/uploads/${id}`);
 }
 
+export async function deleteMuxAsset(id: string) {
+  await mux(`/video/v1/assets/${id}`, { method: 'DELETE' }).catch(() => {});
+}
+
 export async function getAsset(id: string) {
   return mux<{
     id: string;

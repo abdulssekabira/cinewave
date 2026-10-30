@@ -135,6 +135,17 @@ export async function completeMultipart(key: string, uploadId: string, parts: { 
   await call(u.toString(), { method: 'POST', body, headers: { 'Content-Type': 'application/xml' } });
 }
 
+/** Removes a file (and a half-finished upload of it). Missing files are fine. */
+export async function deleteObject(key: string, uploadId?: string | null) {
+  if (uploadId) {
+    const u = new URL(objectUrl(key));
+    u.searchParams.set('uploadId', uploadId);
+    await aws().fetch(u.toString(), { method: 'DELETE' }).catch(() => {});
+  }
+  const res = await aws().fetch(objectUrl(key), { method: 'DELETE' });
+  if (!res.ok && res.status !== 404) throw new Error(`Cloudflare storage: ${res.status}`);
+}
+
 export async function headObject(key: string): Promise<{ size: number } | null> {
   const res = await aws().fetch(objectUrl(key), { method: 'HEAD' });
   if (res.status === 404) return null;

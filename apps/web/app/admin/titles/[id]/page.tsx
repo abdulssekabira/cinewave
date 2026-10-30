@@ -17,6 +17,7 @@ import { TitleForm } from '@/components/admin/TitleForm';
 import { r2Configured } from '@/lib/r2';
 import { VideoUpload } from '@/components/admin/VideoUpload';
 import { EpisodeManager } from '@/components/admin/EpisodeManager';
+import { DeleteTitle } from '@/components/admin/DeleteTitle';
 import type { Episode } from '@cinewave/shared';
 import { muxConfigured } from '@/lib/mux';
 
@@ -173,6 +174,7 @@ export default async function EditTitle({ params, searchParams }: Props) {
           />}
         </section>
       )}
+      {isAdmin && <DeleteTitle titleId={title.id} name={title.title} />}
     </>
   );
 }

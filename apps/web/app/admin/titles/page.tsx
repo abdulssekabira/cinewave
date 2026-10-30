@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { PLAN_LABEL, posterPalette } from '@cinewave/shared';
 import { availability, fmtDate, requireStaff, type AdminTitle, type RightsRow } from '@/lib/admin';
 
-type Props = { searchParams: Promise<{ q?: string; status?: string }> };
+type Props = { searchParams: Promise<{ q?: string; status?: string; deleted?: string }> };
 
 export default async function AdminTitles({ searchParams }: Props) {
   const { sb } = await requireStaff();
@@ -24,6 +24,8 @@ export default async function AdminTitles({ searchParams }: Props) {
         <h1>Films</h1>
         <Link href="/admin/titles/new" className="btn btn-accent btn-small">+ Add film</Link>
       </div>
+
+      {sp.deleted && <div className="form-msg ok" role="status">Film deleted.</div>}
 
       <form className="a-filters" action="/admin/titles">
         <input name="q" className="input" placeholder="Search films…" defaultValue={sp.q ?? ''} aria-label="Search films" />

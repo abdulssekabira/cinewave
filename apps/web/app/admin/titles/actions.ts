@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { kampalaDay, requireStaff, slugify } from '@/lib/admin';
+import { deleteObject, r2Configured } from '@/lib/r2';
+import { deleteMuxAsset, muxConfigured } from '@/lib/mux';
 
 export type FormState = { error?: string; message?: string };
 
@@ -169,4 +171,29 @@ export async function deleteRights(rightsId: string, titleId: string) {
   await sb.from('rights').delete().eq('id', rightsId);
   revalidatePath('/', 'layout');
   redirect(`/admin/titles/${titleId}`);
+}
+
+/**
+ * Deletes a film or series for good (owner only): its parts, rights,
+ * progress, downloads and its video files in storage.
+ */
+export async function deleteTitle(titleId: string): Promise<FormState> {
+  const { sb, isAdmin } = await requireStaff();
+  if (!isAdmin) return { error: 'Only the owner can delete films.' };
+  const { data: media } = await sb.from('media_assets').select('provider, asset_id, playback_id, upload_id').eq('title_id', titleId);
+  const { error } = await sb.from('titles').delete().eq('id', titleId);
+  if (error) return { error: error.message };
+  // Remove the files too, so storage isn't paid for deleted films.
+  for (const m of media ?? []) {
+    try {
+      if (m.provider === 'r2' && r2Configured() && m.asset_id) {
+        await deleteObject(m.asset_id, m.upload_id);
+        if (m.playback_id && m.playback_id !== m.asset_id) await deleteObject(m.playback_id);
+      } else if (m.provider === 'mux' && muxConfigured() && m.asset_id) {
+        await deleteMuxAsset(m.asset_id);
+      }
+    } catch { /* the film is gone; a leftover file can be cleaned later */ }
+  }
+  revalidatePath('/', 'layout');
+  redirect('/admin/titles?deleted=1');
 }
