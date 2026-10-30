@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle } from '@cinewave/shared';
+import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle, vjLabel } from '@cinewave/shared';
 import { saveWatchProgress } from '@/app/watch/[slug]/actions';
 import { ExpandIcon, MuteIcon, PauseIcon, PlayIcon, SettingsIcon, StarIcon, VolumeIcon } from './Icons';
 
@@ -357,6 +357,7 @@ export function VideoPlayer({
         <div className="player-top">
           <div style={{ visibility: showInfo ? 'visible' : 'hidden' }}>
             <h1 className="player-title">{title.title}</h1>
+            {title.vj_name && <div className="player-vj">{vjLabel(title.vj_name)}</div>}
             {episode && (
               <div className="player-part">{episode.label}{episode.name ? ` · ${episode.name}` : ''}</div>
             )}

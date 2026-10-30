@@ -687,3 +687,9 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .app-steps h2 { font-size: 18px; margin: 0 0 10px; }
 .app-steps ol { margin: 0 0 12px; padding-left: 20px; line-height: 1.6; }
 .app-steps li { margin-bottom: 8px; }
+
+/* VJ name with each film */
+.card-vj { color: var(--accent); font-size: 12px; font-weight: 700; margin-top: 2px; letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill-vj { background: var(--accent); color: #fff; border-color: var(--accent); }
+.player-vj { color: #fff; font-weight: 700; font-size: 14px; margin-top: 2px; opacity: .9; }

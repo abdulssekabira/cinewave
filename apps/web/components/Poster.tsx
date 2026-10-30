@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { posterPalette, type CatalogTitle } from '@cinewave/shared';
+import { posterPalette, vjLabel, type CatalogTitle } from '@cinewave/shared';
 import { PlayIcon } from './Icons';
 
 /** Generated artwork for titles that don't have a poster yet. */
@@ -38,6 +38,7 @@ export function PosterCard({ title }: { title: CatalogTitle }) {
         <PosterArt title={title} />
       </div>
       <div className="card-title">{title.title}</div>
+      {title.vj_name && <div className="card-vj">{vjLabel(title.vj_name)}</div>}
     </Link>
   );
 }
@@ -56,6 +57,7 @@ export function LandscapeCard({
         <div className="progress"><div style={{ width: `${progress}%` }} /></div>
       </div>
       <div className="card-title">{title.title}</div>
+      {title.vj_name && <div className="card-vj">{vjLabel(title.vj_name)}</div>}
       {episode && <div className="card-sub">Part {episode.number}{episode.name ? ` · ${episode.name}` : ''}</div>}
     </Link>
   );

@@ -8,7 +8,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { entitlementMessage, saveEpisodeProgress, saveProgress, type EntitlementReason, type PlanId } from '@cinewave/shared';
+import { entitlementMessage, saveEpisodeProgress, saveProgress, vjLabel, type EntitlementReason, type PlanId } from '@cinewave/shared';
 import { Button, Centered, Loading } from '@/components/ui';
 import { getPlayInfo, type PlayInfo } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -183,6 +183,7 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={styles.title} numberOfLines={1}>{info.title.title}</Text>
+            {info.title.vj_name ? <Text style={styles.vj} numberOfLines={1}>{vjLabel(info.title.vj_name)}</Text> : null}
             {info.episode && (
               <Text style={styles.part} numberOfLines={1}>{info.episode.label}{info.episode.name ? ` · ${info.episode.name}` : ''}</Text>
             )}
@@ -223,6 +224,7 @@ const styles = StyleSheet.create({
   top: { position: 'absolute', left: 0, right: 0, top: 0, flexDirection: 'row', alignItems: 'center', gap: 10, paddingBottom: 12, backgroundColor: 'rgba(0,0,0,0.45)' },
   back: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)' },
   title: { color: '#fff', fontFamily: F.bold, fontSize: 17 },
+  vj: { color: colors.accent, fontFamily: F.bold, fontSize: 12.5, marginTop: 1 },
   part: { color: 'rgba(255,255,255,0.85)', fontFamily: F.semibold, fontSize: 13, marginTop: 1 },
   sheet: {
     position: 'absolute', alignSelf: 'center', top: '30%', width: '86%', maxWidth: 420, padding: 18, borderRadius: 18,

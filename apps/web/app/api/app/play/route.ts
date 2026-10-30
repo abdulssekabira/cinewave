@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const p = await resolvePlayback(sb, user, title, profile?.country_code ?? requestCountry(req), part);
   return NextResponse.json(
     {
-      title: { id: title.id, slug: title.slug, title: title.title, kind: title.kind ?? 'movie' },
+      title: { id: title.id, slug: title.slug, title: title.title, kind: title.kind ?? 'movie', vj_name: title.vj_name ?? null },
       can_play: p.ent.can_play && !p.noParts,
       reason: p.noParts ? 'no_parts' : p.ent.reason,
       required_plan: p.ent.required_plan,

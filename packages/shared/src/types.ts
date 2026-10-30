@@ -52,6 +52,13 @@ export interface Episode {
 }
 
 /** "Part 3" or "S2 · Part 3" when a series has more than one season. */
+/** "VJ Junior" (adds "VJ " unless the name already starts with it). */
+export function vjLabel(name: string | null | undefined): string | null {
+  const n = (name ?? '').trim();
+  if (!n) return null;
+  return /^vj\b/i.test(n) ? n : `VJ ${n}`;
+}
+
 export function partLabel(e: Pick<Episode, 'season' | 'number'>, multiSeason = false): string {
   return multiSeason ? `S${e.season} · Part ${e.number}` : `Part ${e.number}`;
 }

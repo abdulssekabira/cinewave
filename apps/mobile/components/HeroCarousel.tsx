@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import type { CatalogTitle } from '@cinewave/shared';
+import { vjLabel, type CatalogTitle } from '@cinewave/shared';
 import { colors, F, radius } from '@/lib/theme';
 import { Rating, WideArt } from './Poster';
 
@@ -47,6 +47,7 @@ export function HeroCarousel({ titles }: { titles: CatalogTitle[] }) {
             />
             <View style={styles.cardBody}>
               <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+              {item.vj_name ? <Text style={styles.heroVj}>{vjLabel(item.vj_name)}</Text> : null}
               <Rating title={item} style={{ marginTop: 6 }} />
             </View>
           </Pressable>
@@ -64,6 +65,7 @@ export function HeroCarousel({ titles }: { titles: CatalogTitle[] }) {
 }
 
 const styles = StyleSheet.create({
+  heroVj: { color: colors.accent, fontFamily: F.bold, fontSize: 13, marginTop: 4 },
   card: { borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.surface },
   cardBody: { position: 'absolute', left: 18, right: 18, bottom: 16 },
   cardTitle: { color: '#fff', fontFamily: F.bold, fontSize: 21, lineHeight: 26 },

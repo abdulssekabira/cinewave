@@ -15,7 +15,7 @@ export async function authHeaders(): Promise<Record<string, string>> {
 }
 
 export type PlayInfo = {
-  title: { id: string; slug: string; title: string; kind: 'movie' | 'series' };
+  title: { id: string; slug: string; title: string; kind: 'movie' | 'series'; vj_name?: string | null };
   can_play: boolean;
   reason: string;
   required_plan: string | null;

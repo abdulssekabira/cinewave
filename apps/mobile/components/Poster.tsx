@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { formatRuntime, posterPalette, ratingLabel, type CatalogTitle } from '@cinewave/shared';
+import { formatRuntime, posterPalette, ratingLabel, vjLabel, type CatalogTitle } from '@cinewave/shared';
 import { colors, F, img, radius } from '@/lib/theme';
 
 const fill = { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0 };
@@ -87,6 +87,7 @@ export function PosterCard({ title, width = 124 }: { title: CatalogTitle; width?
               )}
             </View>
             <Text style={styles.cardTitle} numberOfLines={1}>{title.title}</Text>
+            {title.vj_name ? <Text style={styles.cardVj} numberOfLines={1}>{vjLabel(title.vj_name)}</Text> : null}
           </>
         )}
       </Pressable>
@@ -123,6 +124,7 @@ export function LandscapeCard({
           </View>
         </View>
         <Text style={styles.cardTitle} numberOfLines={1}>{title.title}</Text>
+        {title.vj_name ? <Text style={styles.cardVj} numberOfLines={1}>{vjLabel(title.vj_name)}</Text> : null}
         <Text style={styles.cardSub}>{episode ? `Part ${episode.number} · ` : ''}{progress}% watched</Text>
       </Pressable>
     </Link>
@@ -144,6 +146,7 @@ export const styles = StyleSheet.create({
   },
   tagText: { color: '#fff', fontFamily: F.bold, fontSize: 8.5, letterSpacing: 0.8 },
   cardTitle: { color: colors.text, fontFamily: F.semibold, fontSize: 13, marginTop: 8 },
+  cardVj: { color: colors.accent, fontFamily: F.bold, fontSize: 11.5, marginTop: 1 },
   cardSub: { color: colors.faint, fontFamily: F.medium, fontSize: 11, marginTop: 2 },
   metaText: { color: '#e6e6ee', fontFamily: F.medium, fontSize: 12.5 },
   landscape: { aspectRatio: 16 / 9, borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.surface },
