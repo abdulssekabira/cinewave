@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { requestPasswordReset, signIn, signUp, type AuthState } from '@/app/login/actions';
+import { PasswordInput } from './PasswordInput';
 
 type Mode = 'signin' | 'signup' | 'reset';
 
@@ -55,13 +56,11 @@ export function AuthForm({ mode, next }: { mode: Mode; next: string }) {
         {mode !== 'reset' && (
           <div className="field">
             <label htmlFor="password">Password</label>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               required
               minLength={mode === 'signup' ? 8 : undefined}
-              className="input"
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             />
           </div>

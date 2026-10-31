@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { updatePassword, type AuthState } from '@/app/login/actions';
+import { PasswordInput } from '@/components/PasswordInput';
 
 export default function PasswordPage() {
   const [state, action, pending] = useActionState<AuthState, FormData>(updatePassword, {});
@@ -15,7 +16,7 @@ export default function PasswordPage() {
         <form action={action}>
           <div className="field">
             <label htmlFor="password">New password</label>
-            <input id="password" name="password" type="password" minLength={8} required className="input" autoComplete="new-password" />
+            <PasswordInput id="password" name="password" minLength={8} required autoComplete="new-password" />
           </div>
           <button className="btn btn-accent" style={{ width: '100%' }} disabled={pending}>
             {pending ? 'Saving…' : 'Update password'}

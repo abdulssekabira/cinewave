@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/ui';
 import { signInWithIdentifier } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
@@ -12,6 +13,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
 
@@ -94,14 +96,27 @@ export default function Login() {
           placeholder={mode === 'signin' ? 'Email or username' : 'you@example.com'}
         />
         <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-          onSubmitEditing={submit}
-        />
+        <View style={styles.pwWrap}>
+          <TextInput
+            style={[styles.input, { paddingRight: 52 }]}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPw}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            onSubmitEditing={submit}
+          />
+          <Pressable
+            onPress={() => setShowPw((v) => !v)}
+            style={styles.eye}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={showPw ? 'Hide password' : 'Show password'}
+          >
+            <Ionicons name={showPw ? 'eye-off-outline' : 'eye-outline'} size={22} color={showPw ? colors.text : colors.faint} />
+          </Pressable>
+        </View>
         <Button
           label={busy ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
           onPress={submit}
@@ -120,6 +135,8 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
+  pwWrap: { position: 'relative', justifyContent: 'center' },
+  eye: { position: 'absolute', right: 6, top: 0, height: 52, width: 44, alignItems: 'center', justifyContent: 'center' },
   wrap: { padding: 24, paddingTop: 12 },
   brand: { color: colors.text, fontFamily: F.extrabold, fontSize: 18, letterSpacing: 2, marginBottom: 28 },
   h1: { color: colors.text, fontFamily: F.bold, fontSize: 28 },
