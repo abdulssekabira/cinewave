@@ -10,6 +10,7 @@ import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveEpisodeProgress, saveProgress } from '@cinewave/shared';
 import { Button, Centered, Loading } from '@/components/ui';
+import { GlePlayer } from '@/components/GlePlayer';
 import { useAuth } from '@/lib/auth';
 import { findDownload, isPlayable, loadDownloads, useDownloadOwner, type Download } from '@/lib/downloads';
 import { supabase } from '@/lib/supabase';
@@ -123,24 +124,13 @@ function Player({ d, userId }: { d: Download; userId: string }) {
   }
 
   return (
-    <View style={styles.wrap}>
-      <StatusBar hidden />
-      <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls fullscreenOptions={{ enable: true, orientation: 'landscape' }} />
-
-      {!playing && (
-        <View style={[styles.top, { paddingTop: insets.top + 8, paddingLeft: insets.left + 12, paddingRight: insets.right + 12 }]}>
-          <Pressable onPress={() => router.back()} accessibilityLabel="Back" style={styles.back} hitSlop={10}>
-            <Ionicons name="chevron-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title} numberOfLines={1}>{d.title}</Text>
-            <Text style={styles.part} numberOfLines={1}>
-              {d.episodeLabel ? `${d.episodeLabel}${d.episodeName ? ` · ${d.episodeName}` : ''} · ` : ''}Downloaded
-            </Text>
-          </View>
-        </View>
-      )}
-
+    <GlePlayer
+      player={player}
+      title={d.title}
+      subtitle={`${d.episodeLabel ? `${d.episodeLabel}${d.episodeName ? ` · ${d.episodeName}` : ''} · ` : ''}Downloaded`}
+      onBack={() => router.back()}
+      hideControls={!decided && resumeAt !== null}
+    >
       {!decided && resumeAt !== null && (
         <View style={styles.sheet}>
           <Text style={styles.sheetText}>You stopped at <Text style={styles.bold}>{clock(resumeAt)}</Text></Text>
@@ -148,7 +138,7 @@ function Player({ d, userId }: { d: Download; userId: string }) {
           <Button label="Start over" variant="ghost" onPress={() => start(0)} style={{ marginTop: 8 }} />
         </View>
       )}
-    </View>
+    </GlePlayer>
   );
 }
 

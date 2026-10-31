@@ -10,6 +10,7 @@ import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { entitlementMessage, saveEpisodeProgress, saveProgress, vjLabel, type EntitlementReason, type PlanId } from '@cinewave/shared';
 import { Button, Centered, Loading } from '@/components/ui';
+import { GlePlayer } from '@/components/GlePlayer';
 import { getPlayInfo, type PlayInfo } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -172,25 +173,14 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
   }
 
   return (
-    <View style={styles.wrap}>
-      <StatusBar hidden />
-      <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls fullscreenOptions={{ enable: true, orientation: 'landscape' }} />
-
-      {!playing && (
-        <View style={[styles.top, { paddingTop: insets.top + 8, paddingLeft: insets.left + 12, paddingRight: insets.right + 12 }]}>
-          <Pressable onPress={() => router.back()} accessibilityLabel="Back" style={styles.back} hitSlop={10}>
-            <Ionicons name="chevron-back" size={24} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title} numberOfLines={1}>{info.title.title}</Text>
-            {info.title.vj_name ? <Text style={styles.vj} numberOfLines={1}>{vjLabel(info.title.vj_name)}</Text> : null}
-            {info.episode && (
-              <Text style={styles.part} numberOfLines={1}>{info.episode.label}{info.episode.name ? ` · ${info.episode.name}` : ''}</Text>
-            )}
-          </View>
-        </View>
-      )}
-
+    <GlePlayer
+      player={player}
+      title={info.title.title}
+      vj={info.title.vj_name ? vjLabel(info.title.vj_name) : null}
+      subtitle={info.episode ? `${info.episode.label}${info.episode.name ? ` · ${info.episode.name}` : ''}` : null}
+      onBack={() => router.back()}
+      hideControls={(!decided && resumeAt !== null) || upNext !== null}
+    >
       {!decided && resumeAt !== null && (
         <View style={styles.sheet}>
           <Text style={styles.sheetText}>You stopped at <Text style={styles.bold}>{clock(resumeAt)}</Text></Text>
@@ -214,7 +204,7 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
           <Text style={styles.offlineText}>Connection lost. Reconnecting… You’ll continue from {clock(last.current.pos)}.</Text>
         </View>
       )}
-    </View>
+    </GlePlayer>
   );
 }
 
