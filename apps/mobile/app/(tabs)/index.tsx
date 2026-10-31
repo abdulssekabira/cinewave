@@ -81,11 +81,11 @@ export default function Home() {
                   episode={item.episode}
                 />
               )}
-
-        <Browse vjs={vjs} genres={genres} counts={counts} />
             />
           </View>
         )}
+
+        <Browse vjs={vjs} genres={genres} counts={counts} />
 
         {rows.map((r) => (
           <Row key={r.key} label={ROW_LABEL[r.key] ?? r.label} titles={r.titles} onSeeAll={() => router.push('/search')} />
