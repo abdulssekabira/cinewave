@@ -98,16 +98,28 @@ export async function getTitleBySlug(sb: SupabaseClient, slug: string): Promise<
 }
 
 export async function getRelated(sb: SupabaseClient, title: CatalogTitle, limit = 12): Promise<CatalogTitle[]> {
-  if (!title.genres.length) return [];
-  const { data, error } = await sb
-    .from(CATALOG)
-    .select('*')
-    .overlaps('genres', title.genres)
-    .neq('id', title.id)
-    .order('popularity', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data as CatalogTitle[];
+  // Suggestions: same genres first, then the same VJ, then the latest films.
+  const out: CatalogTitle[] = [];
+  const seen = new Set<string>([title.id]);
+  const add = (rows: CatalogTitle[] | null) => {
+    for (const r of rows ?? []) if (!seen.has(r.id) && out.length < limit) { seen.add(r.id); out.push(r); }
+  };
+  if (title.genres.length) {
+    const { data } = await sb.from(CATALOG).select('*').overlaps('genres', title.genres).neq('id', title.id)
+      .order('popularity', { ascending: false }).limit(limit);
+    add(data as CatalogTitle[] | null);
+  }
+  if (out.length < limit && title.vj_slug) {
+    const { data } = await sb.from(CATALOG).select('*').eq('vj_slug', title.vj_slug).neq('id', title.id)
+      .order('published_at', { ascending: false, nullsFirst: false }).limit(limit);
+    add(data as CatalogTitle[] | null);
+  }
+  if (out.length < limit) {
+    const { data } = await sb.from(CATALOG).select('*').neq('id', title.id)
+      .order('published_at', { ascending: false, nullsFirst: false }).limit(limit + 1);
+    add(data as CatalogTitle[] | null);
+  }
+  return out;
 }
 
 export interface SearchParams {

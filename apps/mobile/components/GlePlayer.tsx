@@ -3,10 +3,11 @@ import { useEventListener } from 'expo';
 import * as Brightness from 'expo-brightness';
 import * as NavigationBar from 'expo-navigation-bar';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { VideoView, type VideoPlayer } from 'expo-video';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, PanResponder, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, F } from '@/lib/theme';
 
@@ -33,6 +34,7 @@ export function GlePlayer({
   vj,
   onBack,
   hideControls,
+  below,
   children,
 }: {
   player: VideoPlayer;
@@ -42,6 +44,8 @@ export function GlePlayer({
   onBack: () => void;
   /** Hide the controls (e.g. while a "Resume?" sheet is showing). */
   hideControls?: boolean;
+  /** Shown under the video in the small (upright) view: details, parts, suggestions. */
+  below?: ReactNode;
   children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -78,6 +82,20 @@ export function GlePlayer({
       }
     };
   }, [player]);
+
+  // Leaving the player (e.g. opening a suggestion) pauses the film and puts the
+  // phone upright; coming back restores the player's orientation.
+  const landscapeRef = useRef(true);
+  landscapeRef.current = landscape;
+  useFocusEffect(
+    useCallback(() => {
+      ScreenOrientation.lockAsync(landscapeRef.current ? ScreenOrientation.OrientationLock.LANDSCAPE : ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+      return () => {
+        try { player.pause(); } catch { /* released */ }
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+      };
+    }, [player]),
+  );
 
   useEventListener(player, 'timeUpdate', (e) => {
     setTime(e.currentTime);
@@ -121,6 +139,7 @@ export function GlePlayer({
   const rotate = async () => {
     const next = !landscape;
     setLandscape(next);
+    if (Platform.OS === 'android') NavigationBar.setVisibilityAsync(next ? 'hidden' : 'visible').catch(() => {});
     await ScreenOrientation.lockAsync(next ? ScreenOrientation.OrientationLock.LANDSCAPE : ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
     poke();
   };
@@ -232,11 +251,12 @@ export function GlePlayer({
   const pos = seekPreview ?? shown;
   const pct = duration ? clamp(pos / duration) * 100 : 0;
   const controlsOn = visible && !locked && !hideControls;
-  const side = { paddingLeft: Math.max(insets.left, 16), paddingRight: Math.max(insets.right, 16) };
+  const side = landscape ? { paddingLeft: Math.max(insets.left, 16), paddingRight: Math.max(insets.right, 16) } : { paddingLeft: 10, paddingRight: 10 };
 
   return (
     <View style={s.wrap}>
-      <StatusBar hidden />
+      <StatusBar hidden={landscape} style="light" />
+      <View style={landscape ? StyleSheet.absoluteFill : { width, height: Math.round((width * 9) / 16), marginTop: insets.top }}>
       <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />
 
       {/* Gesture layer (also catches taps while locked). */}
@@ -266,7 +286,7 @@ export function GlePlayer({
 
       {controlsOn && (
         <>
-          <View style={[s.top, side, { paddingTop: insets.top + 8 }]}>
+          <View style={[s.top, side, { paddingTop: (landscape ? insets.top : 0) + 8 }]}>
             <Pressable onPress={onBack} accessibilityLabel="Back" hitSlop={10} style={s.iconBtn}>
               <Ionicons name="chevron-back" size={24} color="#fff" />
             </Pressable>
@@ -279,15 +299,15 @@ export function GlePlayer({
                 </Text>
               ) : null}
             </View>
-            <Pressable onPress={rotate} accessibilityLabel="Rotate screen" hitSlop={10} style={s.iconBtn}>
-              <Ionicons name="phone-landscape-outline" size={22} color="#fff" />
+            <Pressable onPress={rotate} accessibilityLabel={landscape ? 'Small screen with suggestions' : 'Full screen'} hitSlop={10} style={s.iconBtn}>
+              <Ionicons name={landscape ? 'contract-outline' : 'expand-outline'} size={22} color="#fff" />
             </Pressable>
             <Pressable onPress={toggleLock} accessibilityLabel="Lock screen" hitSlop={10} style={s.iconBtn}>
               <Ionicons name="lock-open-outline" size={22} color="#fff" />
             </Pressable>
           </View>
 
-          <View style={s.middle} pointerEvents="box-none">
+          <View style={[s.middle, !landscape && { gap: 30, transform: [{ scale: 0.8 }] }]} pointerEvents="box-none">
             <Pressable onPress={() => { seekBy(-10); poke(); }} accessibilityLabel="Back 10 seconds" style={s.skip}>
               <Ionicons name="play-back" size={26} color="#fff" />
               <Text style={s.skipText}>10</Text>
@@ -305,7 +325,7 @@ export function GlePlayer({
             </Pressable>
           </View>
 
-          <View style={[s.bottom, side, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+          <View style={[s.bottom, side, { paddingBottom: landscape ? Math.max(insets.bottom, 12) : 8 }]}>
             <Text style={s.time}>{clock(pos)}</Text>
             <View
               style={s.barHit}
@@ -323,7 +343,7 @@ export function GlePlayer({
       )}
 
       {(locked && lockHint) && (
-        <View style={[s.lockWrap, { paddingTop: insets.top + 12 }]} pointerEvents="box-none">
+        <View style={[s.lockWrap, { paddingTop: (landscape ? insets.top : 0) + 12 }]} pointerEvents="box-none">
           <Pressable onPress={toggleLock} accessibilityLabel="Unlock screen" style={s.lockBtn}>
             <Ionicons name="lock-closed" size={22} color="#fff" />
             <Text style={s.lockText}>Tap to unlock</Text>
@@ -335,6 +355,13 @@ export function GlePlayer({
           <View style={s.hud}><Ionicons name="lock-open" size={20} color="#fff" /><Text style={s.hudText}>Unlocked</Text></View>
         </View>
       )}
+      </View>
+
+      {!landscape && below ? (
+        <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+          {below}
+        </ScrollView>
+      ) : null}
 
       {children}
     </View>

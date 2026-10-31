@@ -714,3 +714,12 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .pw-wrap .input { padding-right: 52px; width: 100%; }
 .pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: none; border: 0; color: var(--text-faint, #9a9aa5); cursor: pointer; border-radius: 10px; }
 .pw-eye:hover, .pw-eye[aria-pressed='true'] { color: #fff; }
+
+/* Watch page: info, parts and suggestions under the player */
+.watch-below { max-width: 1200px; margin: 18px auto 0; }
+.watch-title { font-size: clamp(20px, 2.4vw, 28px); font-weight: 800; margin: 0; }
+.watch-sub { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; color: var(--text-faint); font-size: 14px; }
+.watch-vj { color: var(--accent); font-weight: 700; }
+.watch-below .parts { padding: 0; margin-top: 22px; }
+.part.current { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 12px; }
+.watch-related { margin-top: 26px; }

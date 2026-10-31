@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { entitlementMessage, saveEpisodeProgress, saveProgress, vjLabel, type EntitlementReason, type PlanId } from '@cinewave/shared';
 import { Button, Centered, Loading } from '@/components/ui';
 import { GlePlayer } from '@/components/GlePlayer';
+import { WatchBelow } from '@/components/WatchBelow';
 import { getPlayInfo, type PlayInfo } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -180,6 +181,7 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
       subtitle={info.episode ? `${info.episode.label}${info.episode.name ? ` · ${info.episode.name}` : ''}` : null}
       onBack={() => router.back()}
       hideControls={(!decided && resumeAt !== null) || upNext !== null}
+      below={<WatchBelow slug={info.title.slug} partId={info.episode?.id ?? null} />}
     >
       {!decided && resumeAt !== null && (
         <View style={styles.sheet}>
