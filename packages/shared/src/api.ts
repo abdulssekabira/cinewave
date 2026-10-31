@@ -159,14 +159,16 @@ export async function getVjs(sb: SupabaseClient, includeHidden = false): Promise
 
 /** How many viewable films each genre and VJ has (for the filter lists). */
 export async function getFilterCounts(sb: SupabaseClient) {
-  const { data } = await sb.from(CATALOG).select('genres, vj_slug').limit(2000);
+  const { data } = await sb.from(CATALOG).select('genres, vj_slug, release_year').limit(5000);
   const genres: Record<string, number> = {};
   const vjs: Record<string, number> = {};
-  for (const r of (data ?? []) as { genres: string[]; vj_slug: string | null }[]) {
+  const years: Record<string, number> = {};
+  for (const r of (data ?? []) as { genres: string[]; vj_slug: string | null; release_year: number | null }[]) {
     for (const g of r.genres ?? []) genres[g] = (genres[g] ?? 0) + 1;
     if (r.vj_slug) vjs[r.vj_slug] = (vjs[r.vj_slug] ?? 0) + 1;
+    if (r.release_year) years[String(r.release_year)] = (years[String(r.release_year)] ?? 0) + 1;
   }
-  return { genres, vjs, total: data?.length ?? 0 };
+  return { genres, vjs, years, total: data?.length ?? 0 };
 }
 
 export async function getPlans(sb: SupabaseClient): Promise<Plan[]> {

@@ -4,11 +4,15 @@ import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   getContinueWatching,
+  getFilterCounts,
+  getGenres,
   getHeroTitles,
+  getVjs,
   getHomeRows,
   getProfile,
   progressPercent,
 } from '@cinewave/shared';
+import { Browse } from '@/components/Browse';
 import { HeroCarousel } from '@/components/HeroCarousel';
 import { LandscapeCard } from '@/components/Poster';
 import { Empty, ErrorState, Loading, Row, SectionTitle } from '@/components/ui';
@@ -23,13 +27,16 @@ export default function Home() {
   const { session } = useAuth();
   const uid = session?.user.id;
   const { data, error, loading, reload } = useAsync(async () => {
-    const [hero, rows, cw, profile] = await Promise.all([
+    const [hero, rows, cw, profile, vjs, genres, counts] = await Promise.all([
       getHeroTitles(supabase),
       getHomeRows(supabase),
       uid ? getContinueWatching(supabase) : Promise.resolve([]),
       uid ? getProfile(supabase, uid) : Promise.resolve(null),
+      getVjs(supabase).catch(() => []),
+      getGenres(supabase).catch(() => []),
+      getFilterCounts(supabase).catch(() => ({ genres: {}, vjs: {}, years: {}, total: 0 })),
     ]);
-    return { hero, rows, cw, name: profile?.display_name ?? null };
+    return { hero, rows, cw, name: profile?.display_name ?? null, vjs, genres, counts };
   }, [uid]);
 
   if (loading && !data) return <Loading />;
@@ -38,7 +45,7 @@ export default function Home() {
     return <Empty icon="film-outline" title="The catalogue is empty" text="Publish a title with active rights to see it here." />;
   }
 
-  const { hero, rows, cw, name } = data;
+  const { hero, rows, cw, name, vjs, genres, counts } = data;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -74,6 +81,8 @@ export default function Home() {
                   episode={item.episode}
                 />
               )}
+
+        <Browse vjs={vjs} genres={genres} counts={counts} />
             />
           </View>
         )}

@@ -693,3 +693,18 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pill-vj { background: var(--accent); color: #fff; border-color: var(--accent); }
 .player-vj { color: #fff; font-weight: 700; font-size: 14px; margin-top: 2px; opacity: .9; }
+
+/* Home: browse by VJ / genre / year / sort */
+.browse { padding: 0 var(--gutter, 4%); margin: 6px 0 28px; }
+.browse-h { font-size: 18px; font-weight: 700; margin: 18px 0 10px; }
+.browse-vjs { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+.browse-vjs::-webkit-scrollbar { display: none; }
+.browse-vj { flex: 0 0 84px; display: flex; flex-direction: column; align-items: center; text-align: center; color: inherit; }
+.browse-vj img, .browse-vj-ini { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); background: var(--surface); }
+.browse-vj-ini { display: flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-weight: 800; font-size: 20px; }
+.browse-vj b { font-size: 12.5px; margin-top: 6px; line-height: 1.2; }
+.browse-vj small { color: var(--text-faint); font-size: 11px; }
+.browse-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.browse-chips::-webkit-scrollbar { display: none; }
+.browse-chip { flex: 0 0 auto; padding: 8px 16px; border-radius: 999px; background: var(--surface); border: 1px solid rgba(255,255,255,.08); color: #fff; font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+.browse-chip:hover { background: var(--surface-hover); }

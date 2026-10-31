@@ -29,7 +29,7 @@ export default async function SearchPage({ searchParams }: Props) {
   ]);
   const vjName = vjs.find((v) => v.slug === params.vj)?.name;
   const genreName = genres.find((g) => g.slug === params.genre)?.name;
-  const heading = vjName ?? genreName ?? (params.kind === 'series' ? 'Series' : params.sort === 'newest' ? 'New & Popular' : 'Movies');
+  const heading = vjName ?? genreName ?? (params.year ? `Films from ${params.year}` : null) ?? (params.kind === 'series' ? 'Series' : params.sort === 'newest' ? 'New & Popular' : 'Movies');
 
   return (
     <div className="page">
@@ -44,6 +44,7 @@ export default async function SearchPage({ searchParams }: Props) {
           {params.vj && <input type="hidden" name="vj" value={params.vj} />}
           {params.access && <input type="hidden" name="access" value={params.access} />}
           {params.kind && <input type="hidden" name="kind" value={params.kind} />}
+          {params.year && <input type="hidden" name="year" value={String(params.year)} />}
           {sp.sort && <input type="hidden" name="sort" value={sp.sort} />}
         </form>
 
@@ -79,6 +80,17 @@ export default async function SearchPage({ searchParams }: Props) {
                 ...genres.map((g) => ({ value: g.slug, label: g.name, count: counts.genres[g.slug] ?? 0 })),
               ]}
             />
+            {Object.keys(counts.years).length > 0 && (
+              <FilterSheet
+                param="year"
+                title="Year"
+                current={params.year ? String(params.year) : ''}
+                options={[
+                  { value: '', label: 'All years', count: counts.total },
+                  ...Object.keys(counts.years).sort((a, b) => Number(b) - Number(a)).map((y) => ({ value: y, label: y, count: counts.years[y] })),
+                ]}
+              />
+            )}
             <FilterSheet
               param="access"
               title="Price"

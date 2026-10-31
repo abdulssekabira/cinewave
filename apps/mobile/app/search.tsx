@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { getFilterCounts, getGenres, getVjs, searchTitles, type CatalogTitle, type Genre, type SearchParams, type Vj } from '@cinewave/shared';
@@ -10,14 +11,18 @@ import { supabase } from '@/lib/supabase';
 import { colors, F, radius } from '@/lib/theme';
 
 export default function Search() {
+  // Filters can arrive from the home screen's Browse shortcuts.
+  const p = useLocalSearchParams<{ vj?: string; genre?: string; year?: string; kind?: string; sort?: string }>();
+  const fromBrowse = Boolean(p.vj || p.genre || p.year || p.kind || p.sort);
   const [query, setQuery] = useState('');
-  const [genre, setGenre] = useState('');
-  const [vj, setVj] = useState('');
-  const [kind, setKind] = useState('');
-  const [sort, setSort] = useState('');
+  const [genre, setGenre] = useState(p.genre ?? '');
+  const [vj, setVj] = useState(p.vj ?? '');
+  const [year, setYear] = useState(p.year ?? '');
+  const [kind, setKind] = useState(p.kind ?? '');
+  const [sort, setSort] = useState(p.sort && p.sort !== 'latest' ? p.sort : '');
   const [genres, setGenres] = useState<Genre[]>([]);
   const [vjs, setVjs] = useState<Vj[]>([]);
-  const [counts, setCounts] = useState<{ genres: Record<string, number>; vjs: Record<string, number>; total: number }>({ genres: {}, vjs: {}, total: 0 });
+  const [counts, setCounts] = useState<{ genres: Record<string, number>; vjs: Record<string, number>; years: Record<string, number>; total: number }>({ genres: {}, vjs: {}, years: {}, total: 0 });
   const [results, setResults] = useState<CatalogTitle[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -35,6 +40,7 @@ export default function Search() {
         query,
         genre: genre || undefined,
         vj: vj || undefined,
+        year: year ? Number(year) : undefined,
         kind: (kind || undefined) as SearchParams['kind'],
         sort: (sort || 'latest') as SearchParams['sort'],
       })
@@ -42,7 +48,7 @@ export default function Search() {
         .catch((e) => setError(e instanceof Error ? e.message : 'Search failed'));
     }, 250);
     return () => clearTimeout(t);
-  }, [query, genre, vj, kind, sort, nonce]);
+  }, [query, genre, vj, year, kind, sort, nonce]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -55,7 +61,7 @@ export default function Search() {
           placeholder="Search movies and series…"
           placeholderTextColor={colors.faint}
           returnKeyType="search"
-          autoFocus
+          autoFocus={!fromBrowse}
           accessibilityLabel="Search movies"
         />
         {query ? (
@@ -79,6 +85,12 @@ export default function Search() {
             { value: '', label: 'All genres', count: counts.total },
             ...genres.map((g) => ({ value: g.slug, label: g.name, count: counts.genres[g.slug] ?? 0 })),
           ]} />
+          {Object.keys(counts.years).length > 0 && (
+            <FilterSheet title="Year" value={year} onChange={setYear} options={[
+              { value: '', label: 'All years', count: counts.total },
+              ...Object.keys(counts.years).sort((a, b) => Number(b) - Number(a)).map((y) => ({ value: y, label: y, count: counts.years[y] })),
+            ]} />
+          )}
           <FilterSheet title="Sort by" value={sort} onChange={setSort} options={[
             { value: '', label: 'Latest added' }, { value: 'popular', label: 'Most popular' },
             { value: 'newest', label: 'Newest release' }, { value: 'az', label: 'A–Z' },

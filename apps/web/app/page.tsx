@@ -1,8 +1,9 @@
-import { getContinueWatching, getHeroTitles, getHomeRows, progressPercent } from '@cinewave/shared';
+import { getContinueWatching, getFilterCounts, getGenres, getHeroTitles, getHomeRows, getVjs, progressPercent } from '@cinewave/shared';
 import { getUser } from '@/lib/supabase/server';
 import { HeroCarousel } from '@/components/HeroCarousel';
 import { LandscapeCard, PosterCard } from '@/components/Poster';
 import { Row } from '@/components/Row';
+import { Browse } from '@/components/Browse';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,10 +15,13 @@ const ROW_META: Record<string, { eyebrow: string; href?: string }> = {
 
 export default async function HomePage() {
   const { sb, user } = await getUser();
-  const [hero, rows, continueWatching] = await Promise.all([
+  const [hero, rows, continueWatching, vjs, genres, counts] = await Promise.all([
     getHeroTitles(sb),
     getHomeRows(sb),
     user ? getContinueWatching(sb) : Promise.resolve([]),
+    getVjs(sb).catch(() => []),
+    getGenres(sb).catch(() => []),
+    getFilterCounts(sb).catch(() => ({ genres: {}, vjs: {}, years: {}, total: 0 })),
   ]);
 
   if (!hero.length && !rows.length) {
@@ -47,6 +51,7 @@ export default async function HomePage() {
             ))}
           </Row>
         )}
+        <Browse vjs={vjs} genres={genres} counts={counts} />
         {rows.map((row) => {
           const meta = ROW_META[row.key] ?? { eyebrow: 'Collection' };
           return (
