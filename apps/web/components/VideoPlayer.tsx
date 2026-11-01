@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { freshStreamUrl } from '@/app/watch/actions';
 import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle, vjLabel } from '@cinewave/shared';
 import { saveWatchProgress } from '@/app/watch/[slug]/actions';
 import { ExpandIcon, MuteIcon, PauseIcon, PlayIcon, SettingsIcon, StarIcon, VolumeIcon } from './Icons';
@@ -47,7 +48,7 @@ function writeLocal(id: string, v: Saved) {
  */
 export function VideoPlayer({
   title,
-  src,
+  src: initialSrc,
   startAt = 0,
   startAtUpdated = null,
   signedIn,
@@ -61,6 +62,11 @@ export function VideoPlayer({
   episode?: PlayerEpisode | null;
 }) {
   const router = useRouter();
+  // The viewing link can be swapped for a fresh one if it stops working.
+  const [src, setSrc] = useState(initialSrc);
+  useEffect(() => setSrc(initialSrc), [initialSrc]);
+  const refreshes = useRef(0);
+  const resumeAfterReload = useRef(false);
   const posKey = episode?.id ?? title.id; // each part has its own resume point
   const wrap = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
@@ -245,6 +251,7 @@ export function VideoPlayer({
           return;
         }
         if (d.type === Hls.ErrorTypes.MEDIA_ERROR) { h.recoverMediaError(); return; }
+        if (d.response?.code === 403 && refreshes.current < 4) { reconnectRef.current(true); return; }
         const code = d.response?.code ? ` (${d.response.code})` : '';
         flash(d.response?.code === 403
           ? 'This viewing link has expired. Refresh the page to carry on from where you stopped.'
@@ -257,6 +264,58 @@ export function VideoPlayer({
       hlsRef.current = h;
     }).catch(() => { if (!cancelled) v.src = src; });
     return () => { cancelled = true; hls?.destroy(); hlsRef.current = null; };
+  }, [src]);
+
+  // Reconnect from the same spot. `fresh` also asks the server for a new link.
+  const reconnectRef = useRef<(fresh: boolean) => void>(() => {});
+  reconnectRef.current = async (fresh: boolean) => {
+    const v = video.current;
+    if (!v) return;
+    const pos = v.currentTime || target.current || 0;
+    const keepPlaying = wasPlaying.current || !v.paused;
+    setOffline(true);
+    if (fresh && refreshes.current < 4) {
+      refreshes.current += 1;
+      const next = await freshStreamUrl(title.slug, episode?.id ?? null).catch(() => null);
+      if (next) {
+        target.current = pos;
+        resumeAfterReload.current = keepPlaying;
+        setSrc(next);
+        return;
+      }
+    }
+    if (hlsRef.current) { hlsRef.current.startLoad(pos || -1); return; }
+    target.current = pos;
+    resumeAfterReload.current = keepPlaying;
+    v.load();
+  };
+
+  // Watchdog: if the film stops moving while it should be playing (a stall
+  // the browser doesn't recover from), reconnect by itself — first gently,
+  // then with a fresh link — instead of making the viewer reload the page.
+  useEffect(() => {
+    let lastT = -1;
+    let stuckSince: number | null = null;
+    let step = 0;
+    const id = window.setInterval(() => {
+      const v = video.current;
+      if (!v || !src) return;
+      const shouldPlay = !v.paused && !v.ended;
+      if (!shouldPlay || Math.abs(v.currentTime - lastT) > 0.2) {
+        lastT = v.currentTime;
+        stuckSince = null;
+        step = 0;
+        if (shouldPlay) setOffline(false);
+        return;
+      }
+      if (!navigator.onLine) return;
+      stuckSince ??= Date.now();
+      const stuck = Date.now() - stuckSince;
+      if (step === 0 && stuck > 8000) { step = 1; reconnectRef.current(false); }
+      else if (step === 1 && stuck > 20000) { step = 2; reconnectRef.current(true); }
+      else if (step === 2 && stuck > 45000) { stuckSince = Date.now(); step = 1; }
+    }, 2000);
+    return () => window.clearInterval(id);
   }, [src]);
 
   // Back online: resume loading from the same scene and send any unsaved position.
@@ -349,7 +408,15 @@ export function VideoPlayer({
           onEnded={() => { save(true); if (episode?.next) setUpNext(10); }}
           onError={(e) => {
             if (!navigator.onLine) { setOffline(true); return; }
-            flash(`This video could not be loaded (code ${e.currentTarget.error?.code ?? '?'}).`);
+            // Broken connection or an expired link: get a fresh link and carry on.
+            if (refreshes.current < 4) { reconnectRef.current(true); return; }
+            flash(`This video could not be loaded (code ${e.currentTarget.error?.code ?? '?'}). Refresh the page to carry on from where you stopped.`);
+          }}
+          onCanPlay={(e) => {
+            if (resumeAfterReload.current) {
+              resumeAfterReload.current = false;
+              e.currentTarget.play().catch(() => {});
+            }
           }}
         />
       ) : null}
