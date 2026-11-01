@@ -164,7 +164,7 @@ export function VideoPlayer({
 
   const seekTo = (clientX: number) => {
     const el = seekRef.current;
-    if (!el || !duration) return;
+    if (!el || !(duration > 0) || !Number.isFinite(duration)) return;
     const r = el.getBoundingClientRect();
     const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * duration;
     if (video.current && src) video.current.currentTime = t;
@@ -301,7 +301,18 @@ export function VideoPlayer({
     return () => window.removeEventListener('pagehide', onLeave);
   }, [save]);
 
-  const pct = duration ? Math.min(100, (time / duration) * 100) : 0;
+  // Some files (e.g. MKV) report their length as unknown. Then use what the
+  // browser can seek to, or the film's runtime, so the progress line moves.
+  function readDuration(v: HTMLVideoElement) {
+    let d = v.duration;
+    if (!Number.isFinite(d) || d <= 0) {
+      try { if (v.seekable.length) d = v.seekable.end(v.seekable.length - 1); } catch { /* not ready */ }
+    }
+    if (!Number.isFinite(d) || d <= 0) d = (title.runtime_minutes ?? 0) * 60;
+    if (Number.isFinite(d) && d > 0) setDuration((cur) => (Math.abs(cur - d) > 0.5 ? d : cur));
+  }
+
+  const pct = duration > 0 && Number.isFinite(duration) && Number.isFinite(time) ? Math.min(100, Math.max(0, (time / duration) * 100)) : 0;
   const rating = ratingLabel(title.rating);
   const art = title.backdrop_url ?? title.poster_url;
   const showInfo = !playing;
@@ -321,10 +332,15 @@ export function VideoPlayer({
           onClick={toggle}
           onPlay={() => { setPlaying(true); wasPlaying.current = true; }}
           onPause={() => { setPlaying(false); wasPlaying.current = false; save(true); }}
-          onTimeUpdate={(e) => { setTime(e.currentTarget.currentTime); save(); }}
+          onTimeUpdate={(e) => {
+            setTime(e.currentTarget.currentTime);
+            if (!(duration > 0) || !Number.isFinite(duration)) readDuration(e.currentTarget);
+            save();
+          }}
+          onDurationChange={(e) => readDuration(e.currentTarget)}
           onPlaying={() => setOffline(false)}
           onLoadedMetadata={(e) => {
-            setDuration(e.currentTarget.duration);
+            readDuration(e.currentTarget);
             if (target.current !== null) {
               e.currentTarget.currentTime = target.current;
               target.current = null;
