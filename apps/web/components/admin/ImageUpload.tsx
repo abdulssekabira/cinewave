@@ -2,9 +2,10 @@
 
 import { useId, useRef, useState } from 'react';
 import { browserClient } from '@/lib/supabase/browser';
+import { ART_SIZE, shrinkImage } from '@/lib/shrink-image';
 
 const TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
-const MAX_MB = 10;
+const MAX_MB = 25;
 
 /**
  * Uploads straight from the browser to the 'artwork' storage bucket (staff
@@ -38,10 +39,13 @@ export function ImageUpload({
     setBusy(true);
     try {
       const sb = browserClient();
-      const path = `${shape === 'round' ? 'vjs' : 'titles'}/${name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      // Shrink to the size it's shown at, so pages load fast on phones and TVs.
+      const small = await shrinkImage(file, ART_SIZE[shape]).catch(() => file);
+      const outExt = small.type === 'image/jpeg' ? 'jpg' : ext;
+      const path = `${shape === 'round' ? 'vjs' : 'titles'}/${name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${outExt}`;
       const { error: upErr } = await sb.storage
         .from('artwork')
-        .upload(path, await file.arrayBuffer(), { contentType: file.type, upsert: false });
+        .upload(path, await small.arrayBuffer(), { contentType: small.type || file.type, upsert: false, cacheControl: '31536000' });
       if (upErr) throw upErr;
       setUrl(sb.storage.from('artwork').getPublicUrl(path).data.publicUrl);
     } catch (e) {

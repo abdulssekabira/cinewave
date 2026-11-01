@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ShrinkExisting } from '@/components/admin/ShrinkExisting';
 import { availability, fmtDate, fmtDateTime, requireStaff, rightsActive, type AdminTitle, type RightsRow } from '@/lib/admin';
 
 type Audit = { id: number; action: string; entity: string; details: Record<string, unknown> | null; at: string };
@@ -126,6 +127,7 @@ export default async function AdminOverview() {
           )}
         </section>
       </div>
+      {isAdmin && <ShrinkExisting />}
     </>
   );
 }

@@ -19,7 +19,7 @@ export function GeneratedArt({ title, className = 'poster-generated' }: { title:
 }
 
 export function PosterArt({ title }: { title: CatalogTitle }) {
-  return title.poster_url ? <img src={title.poster_url} alt="" loading="lazy" /> : <GeneratedArt title={title} />;
+  return title.poster_url ? <img src={title.poster_url} alt="" loading="lazy" decoding="async" /> : <GeneratedArt title={title} />;
 }
 
 function PlanBadge({ title }: { title: CatalogTitle }) {
@@ -52,7 +52,7 @@ export function LandscapeCard({
   return (
     <Link href={href} className="card" aria-label={`Resume ${title.title}${episode ? `, part ${episode.number}` : ''}, ${progress}% watched`}>
       <div className="landscape">
-        {img ? <img src={img} alt="" loading="lazy" /> : <GeneratedArt title={title} />}
+        {img ? <img src={img} alt="" loading="lazy" decoding="async" /> : <GeneratedArt title={title} />}
         <div className="play-badge"><span className="play-circle"><PlayIcon size={18} /></span></div>
         <div className="progress"><div style={{ width: `${progress}%` }} /></div>
       </div>

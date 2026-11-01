@@ -1,16 +1,9 @@
+/** Shown while a page is loading: the GLE Movies mark with a red progress line. */
 export default function Loading() {
   return (
-    <div className="rows" style={{ paddingTop: 40 }} aria-busy="true" aria-label="Loading">
-      {[0, 1].map((r) => (
-        <div key={r} className="row">
-          <div className="skeleton" style={{ height: 20, width: 160, borderRadius: 6, margin: '0 var(--gutter) 14px' }} />
-          <div className="row-track">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="poster skeleton" />
-            ))}
-          </div>
-        </div>
-      ))}
+    <div className="gle-loading" role="status" aria-label="Loading">
+      <div className="gle-loading-mark" aria-hidden="true">GLE<span>MOVIES</span></div>
+      <div className="gle-loading-bar" aria-hidden="true"><div /></div>
     </div>
   );
 }
