@@ -733,3 +733,15 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 @keyframes gle-pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 @keyframes gle-slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
 @media (prefers-reduced-motion: reduce) { .gle-loading-mark, .gle-loading-bar div { animation: none; } }
+
+/* Invite friends */
+.invite-body { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.invite-qr { width: 168px; height: 168px; background: #fff; border-radius: 12px; padding: 8px; flex: 0 0 auto; }
+.invite-qr svg { width: 100%; height: 100%; display: block; }
+.invite-progress { display: flex; gap: 6px; }
+.invite-progress span { flex: 1; max-width: 70px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.14); }
+.invite-progress span.on { background: var(--accent); }
+.invite-code { letter-spacing: .12em; font-size: 16px; color: #fff; }
+.invite-actions .input { margin-bottom: 10px; }
+.invite-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 6px var(--gutter) 18px; padding: 14px 18px; border-radius: 14px; background: linear-gradient(90deg, rgba(229,25,46,.22), rgba(229,25,46,.06)); border: 1px solid rgba(229,25,46,.35); }
+.invite-banner b { color: #fff; }

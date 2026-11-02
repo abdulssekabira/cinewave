@@ -43,6 +43,7 @@ export default function RootLayout() {
           <Stack.Screen name="offline/[id]" options={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: '#000' } }} />
           <Stack.Screen name="search" options={{ title: 'Search' }} />
           <Stack.Screen name="devices" options={{ title: 'Devices' }} />
+          <Stack.Screen name="invite" options={{ title: 'Invite friends' }} />
           <Stack.Screen name="login" options={{ title: '', presentation: 'modal' }} />
         </Stack>
       </AuthProvider>

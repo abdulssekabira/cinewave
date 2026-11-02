@@ -8,6 +8,8 @@ import { signOut } from '@/app/login/actions';
 import { removeDevice } from './actions';
 import { deviceName, type Device } from '@/lib/devices';
 import { TZ } from '@/lib/admin';
+import { InviteActions } from '@/components/InviteCard';
+import { inviteLink, inviteQrSvg, myReferrals, rewardLabel } from '@/lib/referrals';
 
 export const metadata: Metadata = { title: 'Account' };
 
@@ -22,6 +24,9 @@ export default async function AccountPage() {
     sb.rpc('current_plan').then(async (r) => (await sb.from('plans').select('name, max_devices').eq('id', r.data ?? 'free').maybeSingle()).data),
     sb.from('profiles').select('username').eq('id', user.id).maybeSingle(),
   ]);
+  const ref = await myReferrals(sb).catch(() => null);
+  const qr = ref ? await inviteQrSvg(ref.code) : null;
+  const earned = ref ? ref.rewards >= ref.max_rewards : false;
   // Staff are never limited (they test on many devices).
   const devices = ((devRes.data ?? []) as Device[]).map((d) => (staff ? { ...d, allowed: true } : d));
   const limit = (planRes?.max_devices as number | null | undefined) ?? null;
@@ -68,6 +73,44 @@ export default async function AccountPage() {
         <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 0 }}>{user.email}</p>
         <ProfileForm name={profile?.display_name ?? ''} country={profile?.country_code ?? ''} username={unameRes.data?.username ?? ''} />
       </section>
+
+      {ref && (
+        <section className="panel invite" id="invite">
+          <h2>Invite friends</h2>
+          {earned ? (
+            <p className="muted" style={{ marginTop: 0 }}>
+              🎉 You earned {rewardLabel(ref.reward_days)} of Standard free
+              {ref.standard_until ? `, active until ${new Date(ref.standard_until).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}` : ''}.
+              Thanks for sharing GLE Movies! You can keep sharing your link with friends.
+            </p>
+          ) : (
+            <p className="muted" style={{ marginTop: 0 }}>
+              Share your link or QR code. When <b>{ref.needed} friends</b> sign up with it and confirm their email, you get
+              <b> Standard free for {rewardLabel(ref.reward_days)}</b>.
+            </p>
+          )}
+          <div className="invite-body">
+            {qr && <div className="invite-qr" aria-label="Your invite QR code" dangerouslySetInnerHTML={{ __html: qr }} />}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {!earned && (
+                <>
+                  <div className="invite-progress" aria-label={`${Math.min(ref.counted, ref.needed)} of ${ref.needed} friends joined`}>
+                    {Array.from({ length: ref.needed }).map((_, i) => (
+                      <span key={i} className={i < ref.counted ? 'on' : ''} />
+                    ))}
+                  </div>
+                  <p style={{ margin: '6px 0 12px' }}>
+                    <b>{Math.min(ref.counted, ref.needed)} of {ref.needed}</b> friends joined
+                    {ref.joined > ref.counted ? ` · ${ref.joined - ref.counted} still need to confirm their email` : ''}
+                  </p>
+                </>
+              )}
+              <p className="muted" style={{ margin: '0 0 8px' }}>Your code: <b className="invite-code">{ref.code}</b></p>
+              <InviteActions link={inviteLink(ref.code)} />
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="panel" id="devices">
         <h2>Devices</h2>

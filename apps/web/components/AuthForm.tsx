@@ -15,7 +15,7 @@ const COPY: Record<Mode, { title: string; sub: string; cta: string }> = {
 
 const ACTIONS = { signin: signIn, signup: signUp, reset: requestPasswordReset };
 
-export function AuthForm({ mode, next }: { mode: Mode; next: string }) {
+export function AuthForm({ mode, next, refCode }: { mode: Mode; next: string; refCode?: string }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(ACTIONS[mode], {});
   const c = COPY[mode];
   const q = next !== '/' ? `&next=${encodeURIComponent(next)}` : '';
@@ -42,6 +42,14 @@ export function AuthForm({ mode, next }: { mode: Mode; next: string }) {
                 pattern="[A-Za-z0-9_.]{3,20}" placeholder="e.g. abdul_ug"
               />
               <small className="field-hint">You can sign in with this or your email. Letters, numbers, dots and underscores.</small>
+            </div>
+            <div className="field">
+              <label htmlFor="ref">Invite code <span className="field-hint" style={{ display: 'inline' }}>(optional)</span></label>
+              <input
+                id="ref" name="ref" className="input" defaultValue={refCode ?? ''} maxLength={10}
+                autoCapitalize="characters" autoCorrect="off" spellCheck={false} placeholder="e.g. K7P2QX"
+              />
+              {refCode && <small className="field-hint">🎉 A friend invited you.</small>}
             </div>
           </>
         )}

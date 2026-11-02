@@ -14,6 +14,7 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [refCode, setRefCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
 
@@ -38,7 +39,7 @@ export default function Login() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { data: { display_name: name.trim() || undefined, username: uname } },
+          options: { data: { display_name: name.trim() || undefined, username: uname, ref: refCode || undefined } },
         });
         if (error) {
           if (/rate limit/i.test(error.message)) return setMsg({ kind: 'error', text: 'Too many sign-up emails in the last hour. Please try again later.' });
@@ -79,6 +80,16 @@ export default function Login() {
               autoComplete="username-new"
               maxLength={20}
               placeholder="e.g. abdul_ug"
+              placeholderTextColor={colors.faint}
+            />
+            <Text style={styles.label}>Invite code (optional)</Text>
+            <TextInput
+              style={styles.input}
+              value={refCode}
+              onChangeText={(v) => setRefCode(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10))}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              placeholder="e.g. K7P2QX"
               placeholderTextColor={colors.faint}
             />
           </>

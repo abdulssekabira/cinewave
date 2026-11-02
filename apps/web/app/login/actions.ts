@@ -59,7 +59,11 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
     password,
     options: {
       emailRedirectTo: `${await siteOrigin()}/auth/confirm`,
-      data: { display_name: String(form.get('name') ?? '').trim() || undefined, username },
+      data: {
+        display_name: String(form.get('name') ?? '').trim() || undefined,
+        username,
+        ref: String(form.get('ref') ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) || undefined,
+      },
     },
   });
   if (error) {

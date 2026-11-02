@@ -4,6 +4,8 @@ import { HeroCarousel } from '@/components/HeroCarousel';
 import { LandscapeCard, PosterCard } from '@/components/Poster';
 import { Row } from '@/components/Row';
 import { Browse } from '@/components/Browse';
+import Link from 'next/link';
+import { myReferrals, rewardLabel } from '@/lib/referrals';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +25,8 @@ export default async function HomePage() {
     getGenres(sb).catch(() => []),
     getFilterCounts(sb).catch(() => ({ genres: {}, vjs: {}, years: {}, total: 0 })),
   ]);
+  const ref = user ? await myReferrals(sb).catch(() => null) : null;
+  const showInvite = Boolean(ref && ref.rewards < ref.max_rewards);
 
   if (!hero.length && !rows.length) {
     return (
@@ -50,6 +54,13 @@ export default async function HomePage() {
               />
             ))}
           </Row>
+        )}
+        {showInvite && ref && (
+          <div className="invite-banner">
+            <span>🎁 Invite <b>{ref.needed} friends</b> and get <b>Standard free for {rewardLabel(ref.reward_days)}</b>
+              {ref.counted > 0 ? ` · ${Math.min(ref.counted, ref.needed)} of ${ref.needed} joined` : ''}</span>
+            <Link href="/account#invite" className="btn btn-accent btn-small">Get my invite link</Link>
+          </div>
         )}
         <Browse vjs={vjs} genres={genres} counts={counts} />
         {rows.map((row) => {

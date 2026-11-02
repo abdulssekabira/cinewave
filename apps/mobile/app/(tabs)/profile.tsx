@@ -91,6 +91,7 @@ export default function Profile() {
 
         {session && (
           <View style={styles.menu}>
+            <MenuItem icon="gift-outline" label="Invite friends · get Standard free" onPress={() => router.push('/invite')} />
             <MenuItem icon="phone-portrait-outline" label="Devices" onPress={() => router.push('/devices')} />
             <MenuItem icon="time-outline" label="Watchlist" onPress={() => router.push('/watchlist')} />
             <MenuItem icon="search-outline" label="Browse films" onPress={() => router.push('/search')} />

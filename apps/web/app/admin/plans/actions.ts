@@ -79,3 +79,28 @@ export async function saveAppSettings(_: FormState, form: FormData): Promise<For
   revalidatePath('/admin/plans');
   return { message: 'Saved. glemovies.com/app now uses this link.' };
 }
+
+/** Invite-friends reward: how many friends, how many days, how many times per account. */
+export async function saveReferralSettings(_: FormState, form: FormData): Promise<FormState> {
+  const { sb, isAdmin } = await requireStaff();
+  if (!isAdmin) return { error: 'Only the owner can change this.' };
+  const n = (k: string, min: number, max: number) => {
+    const v = Number(t(form, k));
+    return Number.isInteger(v) && v >= min && v <= max ? v : null;
+  };
+  const needed = n('referral_needed', 1, 50);
+  const days = n('referral_days', 1, 365);
+  const times = n('referral_max_rewards', 0, 100);
+  if (needed === null || days === null || times === null) return { error: 'Use whole numbers: friends 1–50, days 1–365, times 0–100.' };
+  const now = new Date().toISOString();
+  const { error } = await sb.from('site_settings').upsert([
+    { key: 'referral_needed', value: String(needed), updated_at: now },
+    { key: 'referral_days', value: String(days), updated_at: now },
+    { key: 'referral_max_rewards', value: String(times), updated_at: now },
+    { key: 'referral_cap_days', value: String(Math.max(days, 90)), updated_at: now },
+  ], { onConflict: 'key' });
+  if (error) return { error: error.message };
+  revalidatePath('/admin/plans');
+  revalidatePath('/account');
+  return { message: 'Saved. New sign-ups follow these rules.' };
+}

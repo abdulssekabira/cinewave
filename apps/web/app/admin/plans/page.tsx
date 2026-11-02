@@ -6,6 +6,7 @@ import { pesapalSandbox } from '@/lib/pesapal';
 import { formatPrice } from '@cinewave/shared';
 import { PlanForm } from '@/components/admin/PlanForm';
 import { AppLinkForm } from '@/components/admin/AppLinkForm';
+import { ReferralForm } from '@/components/admin/ReferralForm';
 
 export default async function AdminPlans() {
   const { sb, isAdmin } = await requireStaff();
@@ -19,6 +20,10 @@ export default async function AdminPlans() {
     sb.from('site_settings').select('key, value'),
   ]);
   const setting = (k: string) => (settings ?? []).find((r) => r.key === k)?.value ?? '';
+  const [{ count: refJoined }, { count: refRewarded }] = await Promise.all([
+    sb.from('profiles').select('id', { count: 'exact', head: true }).not('referred_by', 'is', null),
+    sb.from('profiles').select('id', { count: 'exact', head: true }).gt('referrals_rewarded', 0),
+  ]);
   const sandbox = pesapalSandbox();
   const plans = (p ?? []) as Plan[];
   const count = (id: string) => (subs ?? []).filter((s) => s.plan_id === id).length;
@@ -36,6 +41,18 @@ export default async function AdminPlans() {
       <div className="a-plan-grid">
         {plans.map((plan) => <PlanForm key={plan.id} plan={plan} subscribers={count(plan.id)} />)}
       </div>
+      <section className="a-card" style={{ marginTop: 24 }} id="invites">
+        <h2>Invite friends reward</h2>
+        <p className="a-muted" style={{ marginTop: -4 }}>
+          Each viewer has an invite link and QR code (Account → Invite friends). A friend counts after confirming their email.
+        </p>
+        <ReferralForm
+          needed={setting('referral_needed') || '2'}
+          days={setting('referral_days') || '30'}
+          times={setting('referral_max_rewards') || '1'}
+          stats={{ joined: refJoined ?? 0, rewarded: refRewarded ?? 0 }}
+        />
+      </section>
       <section className="a-card" style={{ marginTop: 24 }} id="app">
         <h2>Android app download</h2>
         <p className="a-muted" style={{ marginTop: -4 }}>
