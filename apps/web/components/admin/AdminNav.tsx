@@ -10,6 +10,7 @@ const ITEMS = [
   { href: '/admin/rows', label: 'Home rows' },
   { href: '/admin/partners', label: 'Partners' },
   { href: '/admin/plans', label: 'Plans', adminOnly: true },
+  { href: '/admin/ads', label: 'Adverts', adminOnly: true },
   { href: '/admin/users', label: 'Users', adminOnly: true },
 ];
 

@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { AdPlan } from '@cinewave/shared';
+import { AdLowerThird } from '@/components/AdLowerThird';
 import { useEventListener } from 'expo';
 import * as Brightness from 'expo-brightness';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -35,6 +37,8 @@ export function GlePlayer({
   onBack,
   hideControls,
   below,
+  ads,
+  titleId,
   children,
 }: {
   player: VideoPlayer;
@@ -46,6 +50,9 @@ export function GlePlayer({
   hideControls?: boolean;
   /** Shown under the video in the small (upright) view: details, parts, suggestions. */
   below?: ReactNode;
+  /** Lower-third adverts for viewers on a plan with ads. */
+  ads?: AdPlan | null;
+  titleId?: string;
   children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -341,6 +348,10 @@ export function GlePlayer({
           </View>
         </>
       )}
+
+      {ads && titleId && !hideControls ? (
+        <AdLowerThird plan={ads} time={time} playing={playing} titleId={titleId} raised={controlsOn} landscape={landscape} />
+      ) : null}
 
       {(locked && lockHint) && (
         <View style={[s.lockWrap, { paddingTop: (landscape ? insets.top : 0) + 12 }]} pointerEvents="box-none">

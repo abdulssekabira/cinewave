@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { freshStreamUrl } from '@/app/watch/actions';
 import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle, vjLabel } from '@cinewave/shared';
 import { saveWatchProgress } from '@/app/watch/[slug]/actions';
+import type { AdPlan } from '@cinewave/shared';
+import { AdLowerThird } from './AdLowerThird';
 import { ExpandIcon, MuteIcon, PauseIcon, PlayIcon, SettingsIcon, StarIcon, VolumeIcon } from './Icons';
 
 function clock(s: number) {
@@ -53,6 +55,7 @@ export function VideoPlayer({
   startAtUpdated = null,
   signedIn,
   episode = null,
+  ads = null,
 }: {
   title: CatalogTitle;
   src?: string | null;
@@ -60,6 +63,8 @@ export function VideoPlayer({
   startAtUpdated?: string | null;
   signedIn: boolean;
   episode?: PlayerEpisode | null;
+  /** Lower-third adverts for viewers whose plan shows ads. */
+  ads?: AdPlan | null;
 }) {
   const router = useRouter();
   // The viewing link can be swapped for a fresh one if it stops working.
@@ -435,6 +440,8 @@ export function VideoPlayer({
           )}
         </div>
       )}
+
+      {ads && <AdLowerThird plan={ads} time={time} playing={playing} titleId={title.id} raised={!idle} />}
 
       <div className="player-overlay">
         <div className="player-top">

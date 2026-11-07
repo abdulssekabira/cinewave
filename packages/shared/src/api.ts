@@ -386,3 +386,62 @@ export async function getPopupNotifications(sb: SupabaseClient): Promise<AppNoti
 export async function markNotifications(sb: SupabaseClient, opts: { ids?: string[]; read?: boolean; popup?: boolean } = {}) {
   await sb.rpc('mark_notifications', { ids: opts.ids ?? null, read: opts.read ?? true, popup: opts.popup ?? false });
 }
+
+// ------------------------------------------------------------ adverts
+
+export interface Ad {
+  id: string;
+  name: string;
+  image_url: string | null;
+  headline: string;
+  subtext: string | null;
+  link_url: string | null;
+  cta: string;
+  weight: number;
+}
+
+export interface AdPlan {
+  ads: Ad[];
+  firstAfterSec: number;
+  everySec: number;
+  showSec: number;
+}
+
+/**
+ * Adverts for this viewer on this title, or null when they shouldn't see any
+ * (paid plan, rights don't allow ads, or no adverts running).
+ */
+export async function getAdPlan(sb: SupabaseClient, titleId: string, country: string | null): Promise<AdPlan | null> {
+  const { data: show } = await sb.rpc('shows_ads_for', { t_id: titleId, country });
+  if (!show) return null;
+  const [{ data: ads }, { data: settings }] = await Promise.all([
+    sb.from('ads').select('id, name, image_url, headline, subtext, link_url, cta, weight')
+      .eq('active', true).lte('starts_at', new Date().toISOString())
+      .or(`ends_at.is.null,ends_at.gt.${new Date().toISOString()}`).limit(50),
+    sb.from('site_settings').select('key, value').in('key', ['ad_first_after_min', 'ad_every_min', 'ad_show_sec']),
+  ]);
+  if (!ads?.length) return null;
+  const num = (k: string, d: number) => {
+    const v = Number(settings?.find((r) => r.key === k)?.value);
+    return Number.isFinite(v) && v > 0 ? v : d;
+  };
+  return {
+    ads: ads as Ad[],
+    firstAfterSec: Math.round(num('ad_first_after_min', 2) * 60),
+    everySec: Math.round(num('ad_every_min', 10) * 60),
+    showSec: Math.round(num('ad_show_sec', 12)),
+  };
+}
+
+/** Picks an advert, favouring higher weights. */
+export function pickAd(ads: Ad[], avoidId?: string): Ad | null {
+  const pool = ads.length > 1 && avoidId ? ads.filter((a) => a.id !== avoidId) : ads;
+  const total = pool.reduce((n, a) => n + (a.weight || 1), 0);
+  let r = Math.random() * total;
+  for (const a of pool) { r -= a.weight || 1; if (r <= 0) return a; }
+  return pool[0] ?? null;
+}
+
+export async function logAdEvent(sb: SupabaseClient, adId: string, kind: 'view' | 'click', titleId?: string) {
+  await sb.rpc('log_ad_event', { a_id: adId, k: kind, t_id: titleId ?? null });
+}

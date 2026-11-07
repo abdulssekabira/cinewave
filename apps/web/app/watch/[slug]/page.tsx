@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { formatRuntime, getEpisodeProgress, getEpisodes, getProfile, getRelated, getTitleBySlug, partLabel, vjLabel } from '@cinewave/shared';
+import { formatRuntime, getAdPlan, getEpisodeProgress, getEpisodes, getProfile, getRelated, getTitleBySlug, partLabel, vjLabel } from '@cinewave/shared';
 import { getUser, viewerCountry } from '@/lib/supabase/server';
 import { BackIcon, PlayIcon } from '@/components/Icons';
 import { PosterCard } from '@/components/Poster';
@@ -30,9 +30,10 @@ export default async function WatchPage({ params, searchParams }: Props) {
   const country = await viewerCountry(profile?.country_code);
   const p = await resolvePlayback(sb, user, title, country, part);
   if (!p.ent.can_play || p.noParts) redirect(`/title/${slug}`);
-  const [related, episodes] = await Promise.all([
+  const [related, episodes, ads] = await Promise.all([
     getRelated(sb, title).catch(() => []),
     title.kind === 'series' ? getEpisodes(sb, title.id).then((e) => e.filter((x) => x.published)).catch(() => []) : Promise.resolve([]),
+    getAdPlan(sb, title.id, country).catch(() => null),
   ]);
   const epProgress = user && episodes.length ? await getEpisodeProgress(sb, episodes.map((e) => e.id)).catch(() => new Map()) : new Map();
   const multiSeason = new Set(episodes.map((e) => e.season)).size > 1;
@@ -70,6 +71,7 @@ export default async function WatchPage({ params, searchParams }: Props) {
         startAtUpdated={p.startAtUpdated}
         signedIn={Boolean(user)}
         episode={p.episode}
+        ads={ads}
       />
 
       {/* Under the player: what's playing, the other parts, and more to watch. */}

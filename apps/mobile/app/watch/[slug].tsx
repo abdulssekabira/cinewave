@@ -8,7 +8,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { entitlementMessage, saveEpisodeProgress, saveProgress, vjLabel, type EntitlementReason, type PlanId } from '@cinewave/shared';
+import { entitlementMessage, getAdPlan, getProfile, saveEpisodeProgress, saveProgress, vjLabel, type AdPlan, type EntitlementReason, type PlanId } from '@cinewave/shared';
 import { Button, Centered, Loading } from '@/components/ui';
 import { GlePlayer } from '@/components/GlePlayer';
 import { WatchBelow } from '@/components/WatchBelow';
@@ -87,6 +87,18 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
   const [playing, setPlaying] = useState(false);
   const [offline, setOffline] = useState(false);
   const [upNext, setUpNext] = useState<number | null>(null);
+  const [ads, setAds] = useState<AdPlan | null>(null);
+
+  // Adverts (only for plans with ads, on films whose rights allow them).
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const profile = userId ? await getProfile(supabase, userId).catch(() => null) : null;
+      const plan = await getAdPlan(supabase, info.title.id, profile?.country_code ?? null);
+      if (alive) setAds(plan);
+    })().catch(() => {});
+    return () => { alive = false; };
+  }, [info.title.id, userId]);
   const last = useRef({ pos: 0, dur: 0, savedServer: 0, savedLocal: 0, pending: false });
 
   // Newest saved spot: the account's (any device) or this phone's own copy.
@@ -181,6 +193,8 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
       subtitle={info.episode ? `${info.episode.label}${info.episode.name ? ` · ${info.episode.name}` : ''}` : null}
       onBack={() => router.back()}
       hideControls={(!decided && resumeAt !== null) || upNext !== null}
+      ads={ads}
+      titleId={info.title.id}
       below={<WatchBelow slug={info.title.slug} partId={info.episode?.id ?? null} />}
     >
       {!decided && resumeAt !== null && (

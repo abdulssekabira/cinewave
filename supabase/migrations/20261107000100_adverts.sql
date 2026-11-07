@@ -1,0 +1,6 @@
+-- Lower-third adverts (applied live via the Supabase connector on 7 Nov 2026).
+-- Tables: ads (name, image_url, headline, subtext, link_url, cta, active, starts_at, ends_at, weight)
+--         ad_events (ad_id, kind view|click, user_id, title_id, at) — admins read only
+-- Functions: log_ad_event(ad, kind, title), shows_ads_for(title, country), ad_stats()
+-- Settings: ad_first_after_min (2), ad_every_min (10), ad_show_sec (12)
+-- See the database for the full definitions.
