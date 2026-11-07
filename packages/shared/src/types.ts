@@ -60,7 +60,7 @@ export function vjLabel(name: string | null | undefined): string | null {
 }
 
 export function partLabel(e: Pick<Episode, 'season' | 'number'>, multiSeason = false): string {
-  return multiSeason ? `S${e.season} · Part ${e.number}` : `Part ${e.number}`;
+  return multiSeason ? `S${e.season} · Episode ${e.number}` : `Episode ${e.number}`;
 }
 
 export interface Plan {

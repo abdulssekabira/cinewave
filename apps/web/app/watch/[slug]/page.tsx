@@ -60,7 +60,7 @@ export default async function WatchPage({ params, searchParams }: Props) {
   return (
     <div className="player-page">
       <div style={{ maxWidth: 1200, margin: '0 auto 16px' }}>
-        <Link href={`/title/${slug}`} className="btn btn-gray btn-small"><BackIcon size={18} /> {p.episode ? 'All parts' : 'Back'}</Link>
+        <Link href={`/title/${slug}`} className="btn btn-gray btn-small"><BackIcon size={18} /> {p.episode ? 'All episodes' : 'Back'}</Link>
       </div>
       <VideoPlayer
         key={p.episode?.id ?? title.id}
@@ -85,7 +85,7 @@ export default async function WatchPage({ params, searchParams }: Props) {
 
         {episodes.length > 1 && (
           <section className="parts" aria-labelledby="w-parts">
-            <h2 className="section-h" id="w-parts">Parts <span className="parts-count">{episodes.length}</span></h2>
+            <h2 className="section-h" id="w-parts">Episodes <span className="parts-count">{episodes.length}</span></h2>
             <ol className="parts-list">
               {episodes.map((e) => {
                 const pr = epProgress.get(e.id);

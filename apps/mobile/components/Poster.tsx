@@ -125,7 +125,7 @@ export function LandscapeCard({
         </View>
         <Text style={styles.cardTitle} numberOfLines={1}>{title.title}</Text>
         {title.vj_name ? <Text style={styles.cardVj} numberOfLines={1}>{vjLabel(title.vj_name)}</Text> : null}
-        <Text style={styles.cardSub}>{episode ? `Part ${episode.number} · ` : ''}{progress}% watched</Text>
+        <Text style={styles.cardSub}>{episode ? `Episode ${episode.number} · ` : ''}{progress}% watched</Text>
       </Pressable>
     </Link>
   );

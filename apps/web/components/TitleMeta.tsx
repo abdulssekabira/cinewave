@@ -8,7 +8,7 @@ export function TitleMeta({ title, full }: { title: CatalogTitle; full?: boolean
     <div className="meta-row">
       {title.vj_name && <span className="pill pill-vj">{vjLabel(title.vj_name)}</span>}
       <span className="pill">{title.kind === 'series' ? 'Series' : 'Movie'}</span>
-      {title.kind === 'series' && Boolean(title.episode_count) && <span>{title.episode_count} parts</span>}
+      {title.kind === 'series' && Boolean(title.episode_count) && <span>{title.episode_count} episodes</span>}
       {title.required_plan === 'free' && <span className="pill pill-plain">Free</span>}
       {title.release_year && <span>{title.release_year}</span>}
       {rating && (

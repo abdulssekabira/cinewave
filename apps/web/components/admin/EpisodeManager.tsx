@@ -20,7 +20,7 @@ export function EpisodeManager({ titleId, episodes, connected, canPublish = true
   return (
     <div>
       {episodes.length === 0 ? (
-        <p className="a-muted">No parts yet. Add Part 1 below, then upload its video.</p>
+        <p className="a-muted">No episodes yet. Add Episode 1 below, then upload its video.</p>
       ) : (
         <ul className="ep-list">
           {episodes.map((e) => (
@@ -44,7 +44,7 @@ export function EpisodeManager({ titleId, episodes, connected, canPublish = true
         {state.message && <div className="form-msg ok" role="status">{state.message}</div>}
         <div className="a-grid2 tight">
           <div className="a-field">
-            <label htmlFor="ep-new-name">Next part’s name (optional)</label>
+            <label htmlFor="ep-new-name">Next episode’s name (optional)</label>
             <input id="ep-new-name" name="name" className="input" placeholder="e.g. The Return" maxLength={120} />
           </div>
           <div className="a-field">
@@ -52,7 +52,7 @@ export function EpisodeManager({ titleId, episodes, connected, canPublish = true
             <input id="ep-new-season" name="season" type="number" min={1} max={99} className="input" defaultValue={lastSeason} />
           </div>
         </div>
-        <button className="btn btn-accent btn-small" disabled={pending}>{pending ? 'Adding…' : '+ Add part'}</button>
+        <button className="btn btn-accent btn-small" disabled={pending}>{pending ? 'Adding…' : '+ Add episode'}</button>
         <small className="a-hint" style={{ display: 'block', marginTop: 8 }}>
           Parts are numbered automatically (Part 1, Part 2…). Use Season only if the series has more than one season.
         </small>
@@ -67,7 +67,7 @@ function EpisodeRow({
   const locked = !canPublish && ep.published;
   const [state, action, pending] = useActionState<EpState, FormData>(saveEpisode.bind(null, titleId, ep.id), {});
   const [confirming, setConfirming] = useState(false);
-  const label = `${multi ? `S${ep.season} · ` : ''}Part ${ep.number}`;
+  const label = `${multi ? `S${ep.season} · ` : ''}Episode ${ep.number}`;
   const v = ep.video.status;
   const tone = v === 'ready' ? 'ok' : v === 'errored' ? 'warn' : 'muted';
   const vLabel = v === 'ready' ? 'Video ready' : v === 'none' ? 'No video' : v === 'errored' ? 'Video problem' : 'Video processing';
@@ -83,7 +83,7 @@ function EpisodeRow({
       </button>
 
       {open && locked && (
-        <div className="ep-body"><p className="a-muted">This part is live. Only the owner can change it.</p></div>
+        <div className="ep-body"><p className="a-muted">This episode is live. Only the owner can change it.</p></div>
       )}
       {open && !locked && (
         <div className="ep-body">
@@ -98,7 +98,7 @@ function EpisodeRow({
             {state.message && <div className="form-msg ok" role="status">{state.message}</div>}
             <div className="a-grid3">
               <div className="a-field">
-                <label htmlFor={`ep-n-${ep.id}`}>Part number</label>
+                <label htmlFor={`ep-n-${ep.id}`}>Episode number</label>
                 <input id={`ep-n-${ep.id}`} name="number" type="number" min={1} max={999} className="input" defaultValue={ep.number} />
               </div>
               <div className="a-field">
@@ -118,8 +118,8 @@ function EpisodeRow({
               <label htmlFor={`ep-syn-${ep.id}`}>Short description</label>
               <textarea id={`ep-syn-${ep.id}`} name="synopsis" className="input" rows={2} defaultValue={ep.synopsis ?? ''} />
             </div>
-            <ImageUpload name="still_url" label="Picture (optional)" hint="A wide 16:9 scene from this part. Without one, the series backdrop or poster is used." initial={ep.still_url} shape="wide" />
-            <button className="btn btn-accent btn-small" disabled={pending}>{pending ? 'Saving…' : 'Save part'}</button>
+            <ImageUpload name="still_url" label="Picture (optional)" hint="A wide 16:9 scene from this episode. Without one, the series backdrop or poster is used." initial={ep.still_url} shape="wide" />
+            <button className="btn btn-accent btn-small" disabled={pending}>{pending ? 'Saving…' : 'Save episode'}</button>
           </form>
 
           <div className="a-row" style={{ marginTop: 14 }}>
@@ -128,12 +128,12 @@ function EpisodeRow({
                 {ep.published ? 'Hide from viewers' : 'Show to viewers'}
               </button>
             ) : (
-              <span className="a-muted">The owner shows this part to viewers.</span>
+              <span className="a-muted">The owner shows this episode to viewers.</span>
             )}
             {confirming ? (
               <button type="button" className="btn btn-accent btn-small" onClick={() => deleteEpisode(titleId, ep.id)}>Tap again to delete {label}</button>
             ) : (
-              <button type="button" className="btn btn-gray btn-small" onClick={() => setConfirming(true)}>Delete part</button>
+              <button type="button" className="btn btn-gray btn-small" onClick={() => setConfirming(true)}>Delete episode</button>
             )}
           </div>
         </div>

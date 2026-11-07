@@ -57,7 +57,7 @@ export default function WatchScreen() {
   if (!info) return <Loading />;
   if (!info.can_play || !info.src) {
     const msg = info.reason === 'no_parts'
-      ? 'Parts for this series are coming soon.'
+      ? 'Episodes for this series are coming soon.'
       : !info.can_play
         ? entitlementMessage(info.reason as EntitlementReason, info.required_plan as PlanId | null)
         : 'This video hasn’t been uploaded yet. Check back soon.';

@@ -45,7 +45,7 @@ export function WatchBelow({ slug, partId }: { slug: string; partId: string | nu
 
       {eps.length > 1 && (
         <View style={{ marginTop: 18 }}>
-          <Text style={s.h}>Parts</Text>
+          <Text style={s.h}>Episodes</Text>
           {eps.map((e) => {
             const now = e.id === partId;
             const art = img(e.still_url ?? title.backdrop_url ?? title.poster_url);

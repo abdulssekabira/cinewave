@@ -26,14 +26,14 @@ export async function addEpisode(titleId: string, _: EpState, form: FormData): P
   // A title with parts is a series.
   await sb.from('titles').update({ kind: 'series' }).eq('id', titleId);
   done(titleId);
-  return { message: `Added Part ${number}. Now upload its video.`, id: data.id };
+  return { message: `Added Episode ${number}. Now upload its video.`, id: data.id };
 }
 
 export async function saveEpisode(titleId: string, episodeId: string, _: EpState, form: FormData): Promise<EpState> {
   const { sb } = await requireStaff();
   const number = Number(t(form, 'number'));
   const season = Number(t(form, 'season')) || 1;
-  if (!Number.isInteger(number) || number < 1 || number > 999) return { error: 'Part number must be between 1 and 999.' };
+  if (!Number.isInteger(number) || number < 1 || number > 999) return { error: 'Episode number must be between 1 and 999.' };
   const runtimeRaw = t(form, 'runtime_minutes');
   const runtime = runtimeRaw ? Number(runtimeRaw) : null;
   if (runtime !== null && (!Number.isInteger(runtime) || runtime < 1 || runtime > 1000)) return { error: 'Runtime must be a whole number of minutes.' };
@@ -45,7 +45,7 @@ export async function saveEpisode(titleId: string, episodeId: string, _: EpState
     still_url: t(form, 'still_url') || null,
   }).eq('id', episodeId);
   if (error) {
-    if (error.code === '23505') return { error: `Season ${season} already has a Part ${number}.` };
+    if (error.code === '23505') return { error: `Season ${season} already has an Episode ${number}.` };
     return { error: error.message };
   }
   done(titleId);

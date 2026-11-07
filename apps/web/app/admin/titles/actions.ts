@@ -174,7 +174,7 @@ export async function deleteRights(rightsId: string, titleId: string) {
 }
 
 /**
- * Deletes a film or series for good (owner only): its parts, rights,
+ * Deletes a film or series for good (owner only): its episodes, rights,
  * progress, downloads and its video files in storage.
  */
 export async function deleteTitle(titleId: string): Promise<FormState> {

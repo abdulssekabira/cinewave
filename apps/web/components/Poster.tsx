@@ -33,7 +33,7 @@ export function PosterCard({ title }: { title: CatalogTitle }) {
       <div className="poster">
         <PlanBadge title={title} />
         {title.kind === 'series' && (
-          <span className="card-series">{title.episode_count ? `${title.episode_count} parts` : 'Series'}</span>
+          <span className="card-series">{title.episode_count ? `${title.episode_count} episodes` : 'Series'}</span>
         )}
         <PosterArt title={title} />
       </div>
@@ -50,7 +50,7 @@ export function LandscapeCard({
   const img = title.backdrop_url ?? title.poster_url;
   const href = `/watch/${title.slug}${episode ? `?part=${episode.id}` : ''}`;
   return (
-    <Link href={href} className="card" aria-label={`Resume ${title.title}${episode ? `, part ${episode.number}` : ''}, ${progress}% watched`}>
+    <Link href={href} className="card" aria-label={`Resume ${title.title}${episode ? `, episode ${episode.number}` : ''}, ${progress}% watched`}>
       <div className="landscape">
         {img ? <img src={img} alt="" loading="lazy" decoding="async" /> : <GeneratedArt title={title} />}
         <div className="play-badge"><span className="play-circle"><PlayIcon size={18} /></span></div>
@@ -58,7 +58,7 @@ export function LandscapeCard({
       </div>
       <div className="card-title">{title.title}</div>
       {title.vj_name && <div className="card-vj">{vjLabel(title.vj_name)}</div>}
-      {episode && <div className="card-sub">Part {episode.number}{episode.name ? ` · ${episode.name}` : ''}</div>}
+      {episode && <div className="card-sub">Episode {episode.number}{episode.name ? ` · ${episode.name}` : ''}</div>}
     </Link>
   );
 }

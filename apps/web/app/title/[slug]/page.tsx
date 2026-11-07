@@ -106,7 +106,7 @@ export default async function TitlePage({ params }: Props) {
           )}
           <div className="hero-actions">
             {ent.can_play && isSeries && !currentEp ? (
-              <button className="btn btn-play" disabled>Parts coming soon</button>
+              <button className="btn btn-play" disabled>Episodes coming soon</button>
             ) : ent.can_play ? (
               <Link href={watchHref(currentEp?.id)} className="btn btn-play">
                 <PlayIcon size={18} />{' '}
@@ -147,7 +147,7 @@ export default async function TitlePage({ params }: Props) {
       {isSeries && episodes.length > 0 && (
         <section className="parts" aria-labelledby="parts-h">
           <h2 className="section-h" id="parts-h">
-            Parts <span className="parts-count">{episodes.length}</span>
+            Episodes <span className="parts-count">{episodes.length}</span>
           </h2>
           {[...new Set(episodes.map((e) => e.season))].map((season) => (
             <div key={season}>
@@ -209,7 +209,7 @@ export default async function TitlePage({ params }: Props) {
         <div>
           <h2 className="section-h">Details</h2>
           <dl className="facts">
-            {isSeries && (<><dt>Parts</dt><dd>{episodes.length}{multiSeason ? ` in ${new Set(episodes.map((e) => e.season)).size} seasons` : ''}</dd></>)}
+            {isSeries && (<><dt>Episodes</dt><dd>{episodes.length}{multiSeason ? ` in ${new Set(episodes.map((e) => e.season)).size} seasons` : ''}</dd></>)}
             {!isSeries && title.runtime_minutes && (<><dt>Runtime</dt><dd>{formatRuntime(title.runtime_minutes)}</dd></>)}
             {title.maturity_rating && (<><dt>Rated</dt><dd>{title.maturity_rating}</dd></>)}
             {title.audio_languages.length > 0 && (<><dt>Audio</dt><dd>{langs(title.audio_languages)}</dd></>)}

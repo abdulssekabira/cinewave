@@ -28,7 +28,7 @@ export function TitleForm({ title, genres, selectedGenres, vjs, canPublish = tru
                   <input type="radio" name="kind" value="movie" defaultChecked={(t?.kind ?? 'movie') === 'movie'} /> Movie (one video)
                 </label>
                 <label className="a-check">
-                  <input type="radio" name="kind" value="series" defaultChecked={t?.kind === 'series'} /> Series (several parts under one poster)
+                  <input type="radio" name="kind" value="series" defaultChecked={t?.kind === 'series'} /> Series (several episodes under one poster)
                 </label>
               </div>
             </fieldset>

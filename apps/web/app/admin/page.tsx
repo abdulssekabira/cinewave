@@ -56,7 +56,7 @@ export default async function AdminOverview() {
       {isAdmin && (waitingFilms.length > 0 || waitingParts.length > 0) && (
         <section className="a-card" style={{ marginBottom: 20 }}>
           <h2>Waiting for your approval</h2>
-          <p className="a-muted" style={{ marginTop: -4 }}>Video is ready. Check it, then publish the film or show the part.</p>
+          <p className="a-muted" style={{ marginTop: -4 }}>Video is ready. Check it, then publish the film or show the episode.</p>
           <ul className="a-list">
             {waitingFilms.map((t) => (
               <li key={t.id}>
@@ -67,8 +67,8 @@ export default async function AdminOverview() {
             ))}
             {waitingParts.map((e) => (
               <li key={e.id}>
-                <span className="a-badge muted">New part</span>
-                <Link href={`/admin/titles/${e.title_id}#parts`}>{titleName.get(e.title_id)?.title ?? 'Series'} · Part {e.number}{e.name ? ` · ${e.name}` : ''}</Link>
+                <span className="a-badge muted">New episode</span>
+                <Link href={`/admin/titles/${e.title_id}#parts`}>{titleName.get(e.title_id)?.title ?? 'Series'} · Episode {e.number}{e.name ? ` · ${e.name}` : ''}</Link>
                 <span className="a-muted">tap Show to viewers</span>
               </li>
             ))}

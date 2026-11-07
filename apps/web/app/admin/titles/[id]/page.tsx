@@ -155,9 +155,9 @@ export default async function EditTitle({ params, searchParams }: Props) {
 
       {title.kind === 'series' ? (
         <section className="a-card" style={{ marginTop: 24 }} id="parts">
-          <h2>Parts</h2>
+          <h2>Episodes</h2>
           <p className="a-muted" style={{ marginTop: -4 }}>
-            Viewers see one poster for this series. Tapping it lists these parts in order, and each part plays its own video.
+            Viewers see one poster for this series. Tapping it lists these episodes in order, and each episode plays its own video.
           </p>
           <EpisodeManager titleId={title.id} episodes={episodeRows} connected={r2Configured() || muxConfigured()} storage={r2Configured() ? 'r2' : 'mux'} canPublish={isAdmin} />
         </section>

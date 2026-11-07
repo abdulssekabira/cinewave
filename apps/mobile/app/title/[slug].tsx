@@ -106,7 +106,7 @@ export default function TitleScreen() {
     const have = dlFor(episodeId);
     if (have?.status === 'done' && isPlayable(have)) return router.push({ pathname: '/offline/[id]', params: { id: have.id } });
     if (have?.status === 'downloading') return router.push('/downloads');
-    if (isSeries && !episodeId) return Alert.alert('Choose a part', 'Tap the download icon next to the part you want.');
+    if (isSeries && !episodeId) return Alert.alert('Choose an episode', 'Tap the download icon next to the episode you want.');
     const msg = await startDownload(userId, title.slug, episodeId);
     if (msg) Alert.alert('Download', msg);
     else Alert.alert('Downloading', 'You can follow it in the Downloads tab. Keep the app open until it finishes.', [
@@ -120,7 +120,7 @@ export default function TitleScreen() {
 
   function watch(partId?: string) {
     if (ent.can_play) {
-      if (isSeries && !eps.length) return Alert.alert('Coming soon', 'Parts for this series are coming soon.');
+      if (isSeries && !eps.length) return Alert.alert('Coming soon', 'Episodes for this series are coming soon.');
       return openPart(partId ?? currentEp?.id);
     }
     if (ent.reason === 'sign_in_required') return router.push('/login');
@@ -178,7 +178,7 @@ export default function TitleScreen() {
 
           {isSeries && eps.length > 0 && (
             <View style={{ marginBottom: 24 }}>
-              <Text style={styles.h2}>Parts</Text>
+              <Text style={styles.h2}>Episodes</Text>
               {eps.map((e) => {
                 const pr = epProgress.get(e.id);
                 const dur = pr?.duration_seconds || (e.runtime_minutes ?? 0) * 60;
