@@ -165,6 +165,24 @@ export async function endRights(rightsId: string, titleId: string) {
   redirect(`/admin/titles/${titleId}`);
 }
 
+/** Switch offline downloads on or off for an existing rights window. */
+export async function setRightsDownload(rightsId: string, titleId: string, on: boolean) {
+  const { sb, isAdmin } = await requireStaff();
+  if (!isAdmin) return;
+  await sb.from('rights').update({ allow_download: on, download_expiry_hours: on ? 48 : null }).eq('id', rightsId);
+  revalidatePath('/', 'layout');
+  redirect(`/admin/titles/${titleId}`);
+}
+
+/** Switch offline downloads on for every film and series at once. */
+export async function allowDownloadsEverywhere() {
+  const { sb, isAdmin } = await requireStaff();
+  if (!isAdmin) return;
+  await sb.from('rights').update({ allow_download: true, download_expiry_hours: 48 }).eq('allow_download', false);
+  revalidatePath('/', 'layout');
+  redirect('/admin/titles?downloads=1');
+}
+
 export async function deleteRights(rightsId: string, titleId: string) {
   const { sb, isAdmin } = await requireStaff();
   if (!isAdmin) return;

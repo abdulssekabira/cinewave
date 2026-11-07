@@ -7,7 +7,7 @@ import type { Partner } from '@/lib/admin';
 export function RightsForm({ titleId, partners, today }: { titleId: string; partners: Partner[]; today: string }) {
   const [state, action, pending] = useActionState<FormState, FormData>(addRights.bind(null, titleId), {});
   const [scope, setScope] = useState<'worldwide' | 'countries'>('worldwide');
-  const [download, setDownload] = useState(false);
+  const [download, setDownload] = useState(true);
 
   return (
     <form action={action} className="a-rights-form">

@@ -11,7 +11,7 @@ import {
   type Partner,
   type RightsRow,
 } from '@/lib/admin';
-import { deleteRights, endRights } from '../actions';
+import { deleteRights, setRightsDownload, endRights } from '../actions';
 import { RightsForm } from '@/components/admin/RightsForm';
 import { TitleForm } from '@/components/admin/TitleForm';
 import { r2Configured } from '@/lib/r2';
@@ -133,6 +133,9 @@ export default async function EditTitle({ params, searchParams }: Props) {
                                 <button className="btn btn-gray btn-small" title="Set the end date to now">End now</button>
                               </form>
                             )}
+                            <form action={setRightsDownload.bind(null, r.id, title.id, !r.allow_download)}>
+                              <button className="btn btn-gray btn-small">{r.allow_download ? 'Turn downloads off' : 'Allow downloads'}</button>
+                            </form>
                             <form action={deleteRights.bind(null, r.id, title.id)}>
                               <button className="btn btn-gray btn-small" title="Delete this record (use End now to keep history)">Delete</button>
                             </form>

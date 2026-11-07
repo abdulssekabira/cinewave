@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { PLAN_LABEL, posterPalette } from '@cinewave/shared';
 import { availability, fmtDate, requireStaff, type AdminTitle, type RightsRow } from '@/lib/admin';
+import { allowDownloadsEverywhere } from './actions';
 
-type Props = { searchParams: Promise<{ q?: string; status?: string; deleted?: string }> };
+type Props = { searchParams: Promise<{ q?: string; status?: string; deleted?: string; downloads?: string }> };
 
 export default async function AdminTitles({ searchParams }: Props) {
-  const { sb } = await requireStaff();
+  const { sb, isAdmin } = await requireStaff();
   const sp = await searchParams;
   let q = sb
     .from('titles')
@@ -22,10 +23,18 @@ export default async function AdminTitles({ searchParams }: Props) {
     <>
       <div className="a-head">
         <h1>Films</h1>
-        <Link href="/admin/titles/new" className="btn btn-accent btn-small">+ Add film</Link>
+        <div className="a-row">
+          {isAdmin && (
+            <form action={allowDownloadsEverywhere}>
+              <button className="btn btn-gray btn-small" title="Turn on offline downloads for every film and series">Allow downloads on all</button>
+            </form>
+          )}
+          <Link href="/admin/titles/new" className="btn btn-accent btn-small">+ Add film</Link>
+        </div>
       </div>
 
       {sp.deleted && <div className="form-msg ok" role="status">Film deleted.</div>}
+      {sp.downloads && <div className="form-msg ok" role="status">Offline downloads are now allowed on every film and series.</div>}
 
       <form className="a-filters" action="/admin/titles">
         <input name="q" className="input" placeholder="Search films…" defaultValue={sp.q ?? ''} aria-label="Search films" />
