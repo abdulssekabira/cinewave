@@ -13,6 +13,7 @@ import {
   progressPercent,
 } from '@cinewave/shared';
 import { Browse } from '@/components/Browse';
+import { NotifyBell } from '@/components/NotifyBell';
 import { HeroCarousel } from '@/components/HeroCarousel';
 import { LandscapeCard } from '@/components/Poster';
 import { Empty, ErrorState, Loading, Row, SectionTitle } from '@/components/ui';
@@ -58,6 +59,7 @@ export default function Home() {
             <Text style={styles.hello}>{name ? `Welcome back ${name} 👋` : 'Welcome to GLE Movies 👋'}</Text>
             <Text style={styles.ask}>Any movie to watch?</Text>
           </View>
+          <NotifyBell />
           <Pressable onPress={() => router.push('/search')} accessibilityRole="button" accessibilityLabel="Search" hitSlop={10}>
             <Ionicons name="search" size={24} color={colors.text} />
           </Pressable>

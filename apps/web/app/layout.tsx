@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
+import { NewEpisodePopup } from '@/components/NewEpisodePopup';
 import '@fontsource/bebas-neue/400.css';
 import '@fontsource-variable/inter';
 import './globals.css';
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Header />
         <main>{children}</main>
+        <NewEpisodePopup />
         <footer className="site-footer">
           <span>© {new Date().getFullYear()} GLE Movies · by Gamers Loft Entertainment</span>
           <Link href="/plans">Plans</Link>

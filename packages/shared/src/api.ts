@@ -348,3 +348,41 @@ export async function saveEpisodeProgress(
     position_seconds: seriesPos, duration_seconds: seriesPos ? dur : null, completed: seriesDone,
   });
 }
+
+// ------------------------------------------------------------ notifications
+
+export interface AppNotification {
+  id: string;
+  kind: string;
+  title_id: string | null;
+  episode_id: string | null;
+  heading: string;
+  body: string | null;
+  link: string | null;
+  image_url: string | null;
+  created_at: string;
+  read_at: string | null;
+  popup_shown_at: string | null;
+}
+
+export async function getNotifications(sb: SupabaseClient, limit = 30): Promise<AppNotification[]> {
+  const { data } = await sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(limit);
+  return (data ?? []) as AppNotification[];
+}
+
+export async function getUnreadCount(sb: SupabaseClient): Promise<number> {
+  const { count } = await sb.from('notifications').select('id', { count: 'exact', head: true }).is('read_at', null);
+  return count ?? 0;
+}
+
+/** New notifications not yet shown as a pop-up (last 14 days). */
+export async function getPopupNotifications(sb: SupabaseClient): Promise<AppNotification[]> {
+  const since = new Date(Date.now() - 14 * 86400000).toISOString();
+  const { data } = await sb.from('notifications').select('*').is('popup_shown_at', null).gte('created_at', since)
+    .order('created_at', { ascending: false }).limit(5);
+  return (data ?? []) as AppNotification[];
+}
+
+export async function markNotifications(sb: SupabaseClient, opts: { ids?: string[]; read?: boolean; popup?: boolean } = {}) {
+  await sb.rpc('mark_notifications', { ids: opts.ids ?? null, read: opts.read ?? true, popup: opts.popup ?? false });
+}

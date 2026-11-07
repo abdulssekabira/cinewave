@@ -44,6 +44,7 @@ export default function RootLayout() {
           <Stack.Screen name="search" options={{ title: 'Search' }} />
           <Stack.Screen name="devices" options={{ title: 'Devices' }} />
           <Stack.Screen name="invite" options={{ title: 'Invite friends' }} />
+          <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
           <Stack.Screen name="login" options={{ title: '', presentation: 'modal' }} />
         </Stack>
       </AuthProvider>
