@@ -26,10 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span>© {new Date().getFullYear()} GLE Movies · by Gamers Loft Entertainment</span>
           <Link href="/plans">Plans</Link>
           <Link href="/app">Get the Android app</Link>
-          <span>Terms</span>
-          <span>Privacy</span>
-          <span>Copyright &amp; takedown</span>
-          <span>Help</span>
+          <Link href="/terms">Terms</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/refunds">Refunds</Link>
+          <Link href="/copyright">Copyright &amp; takedown</Link>
+          <Link href="/contact">Contact &amp; help</Link>
         </footer>
       </body>
     </html>

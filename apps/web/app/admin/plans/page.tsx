@@ -7,6 +7,7 @@ import { formatPrice } from '@cinewave/shared';
 import { PlanForm } from '@/components/admin/PlanForm';
 import { AppLinkForm } from '@/components/admin/AppLinkForm';
 import { ReferralForm } from '@/components/admin/ReferralForm';
+import { ContactForm } from '@/components/admin/ContactForm';
 
 export default async function AdminPlans() {
   const { sb, isAdmin } = await requireStaff();
@@ -41,6 +42,13 @@ export default async function AdminPlans() {
       <div className="a-plan-grid">
         {plans.map((plan) => <PlanForm key={plan.id} plan={plan} subscribers={count(plan.id)} />)}
       </div>
+      <section className="a-card" style={{ marginTop: 24 }} id="contact">
+        <h2>Contact details</h2>
+        <p className="a-muted" style={{ marginTop: -4 }}>
+          Shown on the Terms, Privacy, Refunds, Copyright and Contact pages (Pesapal and Google Play check these).
+        </p>
+        <ContactForm email={setting('contact_email')} phone={setting('contact_phone')} whatsapp={setting('contact_whatsapp')} />
+      </section>
       <section className="a-card" style={{ marginTop: 24 }} id="invites">
         <h2>Invite friends reward</h2>
         <p className="a-muted" style={{ marginTop: -4 }}>

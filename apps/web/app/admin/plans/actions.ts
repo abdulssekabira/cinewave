@@ -104,3 +104,20 @@ export async function saveReferralSettings(_: FormState, form: FormData): Promis
   revalidatePath('/account');
   return { message: 'Saved. New sign-ups follow these rules.' };
 }
+
+/** Business contact details shown on the Terms, Privacy, Refunds, Copyright and Contact pages. */
+export async function saveContactSettings(_: FormState, form: FormData): Promise<FormState> {
+  const { sb, isAdmin } = await requireStaff();
+  if (!isAdmin) return { error: 'Only the owner can change this.' };
+  const email = t(form, 'contact_email').slice(0, 120);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'That email address doesn’t look right.' };
+  const now = new Date().toISOString();
+  const { error } = await sb.from('site_settings').upsert([
+    { key: 'contact_email', value: email || null, updated_at: now },
+    { key: 'contact_phone', value: t(form, 'contact_phone').slice(0, 40) || null, updated_at: now },
+    { key: 'contact_whatsapp', value: t(form, 'contact_whatsapp').slice(0, 40) || null, updated_at: now },
+  ], { onConflict: 'key' });
+  if (error) return { error: error.message };
+  for (const path of ['/terms', '/privacy', '/refunds', '/copyright', '/contact', '/admin/plans']) revalidatePath(path);
+  return { message: 'Saved. The policy and contact pages now show these details.' };
+}
