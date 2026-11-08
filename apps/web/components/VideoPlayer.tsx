@@ -433,7 +433,6 @@ export function VideoPlayer({
           onWaiting={() => setBuffering(true)}
           onSeeking={() => setBuffering(true)}
           onSeeked={() => setBuffering(false)}
-          onCanPlay={() => setBuffering(false)}
           onLoadedMetadata={(e) => {
             readDuration(e.currentTarget);
             if (target.current !== null) {
@@ -449,6 +448,7 @@ export function VideoPlayer({
             flash(`This video could not be loaded (code ${e.currentTarget.error?.code ?? '?'}). Refresh the page to carry on from where you stopped.`);
           }}
           onCanPlay={(e) => {
+            setBuffering(false);
             if (resumeAfterReload.current) {
               resumeAfterReload.current = false;
               e.currentTarget.play().catch(() => {});
