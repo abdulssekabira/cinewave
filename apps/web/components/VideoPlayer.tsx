@@ -89,6 +89,11 @@ export function VideoPlayer({
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState((title.runtime_minutes ?? 0) * 60);
   const [idle, setIdle] = useState(false);
+  // While dragging the line: where the finger/mouse is (the film jumps there on release).
+  const [drag, setDrag] = useState<number | null>(null);
+  const [buffering, setBuffering] = useState(false);
+  // A jump that is still loading: keep showing its target so the line doesn't snap back.
+  const pendingSeek = useRef<{ t: number; at: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [compact, setCompact] = useState(false);
   const [resumeAt, setResumeAt] = useState<number | null>(null);
@@ -173,13 +178,27 @@ export function VideoPlayer({
 
 
 
-  const seekTo = (clientX: number) => {
+  const posAt = (clientX: number) => {
     const el = seekRef.current;
-    if (!el || !(duration > 0) || !Number.isFinite(duration)) return;
+    if (!el || !(duration > 0) || !Number.isFinite(duration)) return null;
     const r = el.getBoundingClientRect();
-    const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * duration;
-    if (video.current && src) video.current.currentTime = t;
-    setTime(t);
+    return Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * duration;
+  };
+  const jumpTo = (t: number) => {
+    const v = video.current;
+    if (!v || !src) return;
+    const max = duration > 0 && Number.isFinite(duration) ? duration - 0.5 : t;
+    const to = Math.max(0, Math.min(max, t));
+    pendingSeek.current = { t: to, at: Date.now() };
+    v.currentTime = to;
+    setTime(to);
+  };
+  // Skips build on a jump that is still loading, so tapping +10 three times = +30.
+  const skip = (sec: number) => {
+    const v = video.current;
+    if (!v) return;
+    const base = pendingSeek.current && Date.now() - pendingSeek.current.at < 8000 ? pendingSeek.current.t : v.currentTime;
+    jumpTo(base + sec);
   };
 
   const fullscreen = () => {
@@ -218,8 +237,8 @@ export function VideoPlayer({
       if ((e.target as HTMLElement)?.closest('input, textarea, select')) return;
       const v = video.current;
       if (e.key === ' ' || e.key === 'k') { e.preventDefault(); toggle(); }
-      else if (e.key === 'ArrowRight' && v && src) v.currentTime += 10;
-      else if (e.key === 'ArrowLeft' && v && src) v.currentTime -= 10;
+      else if (e.key === 'ArrowRight' && v && src) skip(10);
+      else if (e.key === 'ArrowLeft' && v && src) skip(-10);
       else if (e.key === 'm' && v) { v.muted = !v.muted; setMuted(v.muted); }
       else if (e.key === 'f') fullscreen();
     };
@@ -376,7 +395,8 @@ export function VideoPlayer({
     if (Number.isFinite(d) && d > 0) setDuration((cur) => (Math.abs(cur - d) > 0.5 ? d : cur));
   }
 
-  const pct = duration > 0 && Number.isFinite(duration) && Number.isFinite(time) ? Math.min(100, Math.max(0, (time / duration) * 100)) : 0;
+  const shownTime = drag ?? time;
+  const pct = duration > 0 && Number.isFinite(duration) && Number.isFinite(shownTime) ? Math.min(100, Math.max(0, (shownTime / duration) * 100)) : 0;
   const rating = ratingLabel(title.rating);
   const art = title.backdrop_url ?? title.poster_url;
   const showInfo = !playing;
@@ -397,12 +417,23 @@ export function VideoPlayer({
           onPlay={() => { setPlaying(true); wasPlaying.current = true; }}
           onPause={() => { setPlaying(false); wasPlaying.current = false; save(true); }}
           onTimeUpdate={(e) => {
-            setTime(e.currentTarget.currentTime);
+            const now = e.currentTarget.currentTime;
+            const p = pendingSeek.current;
+            if (p) {
+              // Still on the old spot while the new one loads: keep showing the target.
+              if (Math.abs(now - p.t) > 2 && Date.now() - p.at < 8000) return;
+              pendingSeek.current = null;
+            }
+            setTime(now);
             if (!(duration > 0) || !Number.isFinite(duration)) readDuration(e.currentTarget);
             save();
           }}
           onDurationChange={(e) => readDuration(e.currentTarget)}
-          onPlaying={() => setOffline(false)}
+          onPlaying={() => { setOffline(false); setBuffering(false); }}
+          onWaiting={() => setBuffering(true)}
+          onSeeking={() => setBuffering(true)}
+          onSeeked={() => setBuffering(false)}
+          onCanPlay={() => setBuffering(false)}
           onLoadedMetadata={(e) => {
             readDuration(e.currentTarget);
             if (target.current !== null) {
@@ -441,6 +472,7 @@ export function VideoPlayer({
         </div>
       )}
 
+      {buffering && playing && src && <div className="player-spin" aria-label="Loading" />}
       {ads && <AdLowerThird plan={ads} time={time} playing={playing} titleId={title.id} raised={!idle} />}
 
       <div className="player-overlay">
@@ -485,13 +517,27 @@ export function VideoPlayer({
             aria-valuemax={Math.round(duration)}
             aria-valuenow={Math.round(time)}
             aria-valuetext={`${clock(time)} of ${clock(duration)}`}
-            onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture?.(e.pointerId); seekTo(e.clientX); }}
-            onPointerMove={(e) => { if (e.buttons === 1) seekTo(e.clientX); }}
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture?.(e.pointerId);
+              const t = posAt(e.clientX);
+              if (t !== null) setDrag(t);
+            }}
+            onPointerMove={(e) => {
+              if (drag === null) return;
+              const t = posAt(e.clientX);
+              if (t !== null) setDrag(t);
+            }}
+            onPointerUp={() => { if (drag !== null) jumpTo(drag); setDrag(null); }}
+            onPointerCancel={() => { if (drag !== null) jumpTo(drag); setDrag(null); }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); skip(10); }
+              else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); skip(-10); }
+            }}
           >
             <div className="seek-track" />
             <div className="seek-fill" style={{ width: `${pct}%` }} />
             <div className="seek-thumb" style={{ left: `${pct}%` }} />
-            <div className="seek-time" style={{ left: `${pct}%` }}>{clock(time)}</div>
+            <div className={`seek-time${drag !== null ? ' on' : ''}`} style={{ left: `${pct}%` }}>{clock(shownTime)}</div>
           </div>
           <button
             className="ctrl"

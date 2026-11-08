@@ -8,7 +8,7 @@ import * as ScreenOrientation from 'expo-screen-orientation';
 import { useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { VideoView, type VideoPlayer } from 'expo-video';
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { ActivityIndicator, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, F } from '@/lib/theme';
@@ -67,6 +67,10 @@ export function GlePlayer({
   const [landscape, setLandscape] = useState(true);
   const [hud, setHud] = useState<Hud>(null);
   const [seekPreview, setSeekPreview] = useState<number | null>(null);
+  // A jump that is still loading: keep showing its target so the line doesn't snap back.
+  const pending = useRef<{ t: number; at: number } | null>(null);
+  const holdControls = useRef(false);
+  const preview = useRef<number | null>(null);
 
   const bright = useRef(0.6);
   const volume = useRef(1);
@@ -105,6 +109,11 @@ export function GlePlayer({
   );
 
   useEventListener(player, 'timeUpdate', (e) => {
+    const p = pending.current;
+    if (p) {
+      if (Math.abs(e.currentTime - p.t) > 2 && Date.now() - p.at < 8000) return;
+      pending.current = null;
+    }
     setTime(e.currentTime);
     if (player.duration && player.duration !== duration) setDuration(player.duration);
   });
@@ -115,7 +124,7 @@ export function GlePlayer({
   const poke = useCallback(() => {
     setVisible(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setVisible(false), 3500);
+    hideTimer.current = setTimeout(() => { if (!holdControls.current) setVisible(false); }, 3500);
   }, []);
   useEffect(() => {
     if (!playing) { setVisible(true); if (hideTimer.current) clearTimeout(hideTimer.current); }
@@ -128,10 +137,19 @@ export function GlePlayer({
     hudTimer.current = setTimeout(() => setHud(null), 900);
   };
 
+  const jumpTo = (t: number) => {
+    const total = player.duration || 0;
+    const to = clamp(t, 0, total > 1 ? total - 0.5 : Infinity);
+    pending.current = { t: to, at: Date.now() };
+    player.currentTime = to;
+    setTime(to);
+    return to;
+  };
+  // Skips build on a jump that is still loading, so tapping +10 three times = +30.
   const seekBy = (sec: number) => {
-    const t = clamp((player.currentTime || 0) + sec, 0, player.duration || Infinity);
-    player.currentTime = t;
-    setTime(t);
+    const p = pending.current;
+    const base = p && Date.now() - p.at < 8000 ? p.t : player.currentTime || 0;
+    jumpTo(base + sec);
     showHud({ icon: sec < 0 ? 'play-back' : 'play-forward', label: `${sec < 0 ? '−' : '+'}${Math.abs(sec)} s` });
   };
 
@@ -174,7 +192,7 @@ export function GlePlayer({
             g.current.startVal = g.current.mode === 'bright' ? bright.current : volume.current;
           } else if (Math.abs(s.dx) > 20 && Math.abs(s.dx) > Math.abs(s.dy) * 1.5) {
             g.current.mode = 'seek';
-            g.current.startVal = player.currentTime || 0;
+            g.current.startVal = pending.current?.t ?? (player.currentTime || 0);
           } else return;
         }
         if (g.current.mode === 'bright' || g.current.mode === 'volume') {
@@ -193,6 +211,7 @@ export function GlePlayer({
           const total = player.duration || 0;
           // A full swipe across the screen moves about 3 minutes.
           const t = clamp(g.current.startVal + (s.dx / w) * 180, 0, total || Infinity);
+          preview.current = t;
           setSeekPreview(t);
         }
       },
@@ -200,7 +219,9 @@ export function GlePlayer({
         const mode = g.current.mode;
         g.current.mode = '';
         if (mode === 'seek') {
-          setSeekPreview((t) => { if (t !== null) player.currentTime = t; return null; });
+          if (preview.current !== null) jumpTo(preview.current);
+          preview.current = null;
+          setSeekPreview(null);
           return;
         }
         if (mode) return;
@@ -235,20 +256,39 @@ export function GlePlayer({
 
   // ---------------------------------------------------------- seek bar
   const barWidth = useRef(1);
+  const barLeft = useRef(0);
+  const barRef = useRef<ComponentRef<typeof View>>(null);
+  const measureBar = () => barRef.current?.measureInWindow((x: number, _y: number, w: number) => { barLeft.current = x; barWidth.current = Math.max(1, w); });
+  // pageX (where the finger is on screen) minus where the bar starts: steady
+  // even when the finger is over the knob.
+  const atFinger = (pageX: number) => clamp((pageX - barLeft.current) / barWidth.current) * (player.duration || 0);
   const scrub = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (e) => {
-        const t = clamp(e.nativeEvent.locationX / barWidth.current) * (player.duration || 0);
+        measureBar();
+        const t = atFinger(e.nativeEvent.pageX);
+        preview.current = t;
         setSeekPreview(t);
+        holdControls.current = true;
       },
       onPanResponderMove: (e) => {
-        const t = clamp(e.nativeEvent.locationX / barWidth.current) * (player.duration || 0);
+        const t = atFinger(e.nativeEvent.pageX);
+        preview.current = t;
         setSeekPreview(t);
       },
       onPanResponderRelease: () => {
-        setSeekPreview((t) => { if (t !== null) player.currentTime = t; return null; });
+        if (preview.current !== null) jumpTo(preview.current);
+        preview.current = null;
+        setSeekPreview(null);
+        holdControls.current = false;
+        poke();
+      },
+      onPanResponderTerminate: () => {
+        preview.current = null;
+        setSeekPreview(null);
+        holdControls.current = false;
       },
       onPanResponderTerminationRequest: () => false,
     }),
@@ -335,8 +375,9 @@ export function GlePlayer({
           <View style={[s.bottom, side, { paddingBottom: landscape ? Math.max(insets.bottom, 12) : 8 }]}>
             <Text style={s.time}>{clock(pos)}</Text>
             <View
+              ref={barRef}
               style={s.barHit}
-              onLayout={(e) => { barWidth.current = Math.max(1, e.nativeEvent.layout.width); }}
+              onLayout={(e) => { barWidth.current = Math.max(1, e.nativeEvent.layout.width); measureBar(); }}
               {...scrub.panHandlers}
             >
               <View style={s.bar}>

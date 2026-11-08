@@ -313,7 +313,7 @@ a.chip:hover { background: rgba(255, 255, 255, .16); }
 .ctrl { background: none; border: 0; color: #fff; cursor: pointer; padding: 6px; display: grid; place-items: center; border-radius: 50%; }
 .ctrl:hover { background: rgba(255, 255, 255, .12); }
 .ctrl-ring { width: 40px; height: 40px; border: 2px solid #fff; }
-.seek { position: relative; flex: 1; height: 24px; display: flex; align-items: center; cursor: pointer; }
+.seek { position: relative; flex: 1; height: 28px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
 .seek-track { position: absolute; left: 0; right: 0; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .35); }
 .seek-fill { position: absolute; left: 0; height: 4px; border-radius: 2px; background: var(--accent); }
 .seek-thumb {
@@ -789,3 +789,10 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .ad-l3-x { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: #fff; font-size: 16px; line-height: 1; cursor: pointer; }
 @keyframes ad-in { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (max-width: 560px) { .ad-l3 { left: 2%; right: 2%; max-width: none; bottom: 14px; } .ad-l3.raised { bottom: 74px; } .ad-l3-img { width: 48px; height: 40px; } }
+
+.player-spin {
+  position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px; z-index: 3; pointer-events: none;
+  border-radius: 50%; border: 4px solid rgba(255, 255, 255, .25); border-top-color: #fff; animation: player-spin .8s linear infinite;
+}
+@keyframes player-spin { to { transform: rotate(360deg); } }
+.seek-time.on { transform: translateX(-50%) scale(1.15); }
