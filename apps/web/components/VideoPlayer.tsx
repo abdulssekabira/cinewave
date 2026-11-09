@@ -9,6 +9,9 @@ import type { AdPlan } from '@cinewave/shared';
 import { AdLowerThird } from './AdLowerThird';
 import { ExpandIcon, MuteIcon, PauseIcon, PlayIcon, SettingsIcon, StarIcon, VolumeIcon } from './Icons';
 
+const ASPECTS = ['Fit', 'Fill screen', 'Stretch', '16:9', '4:3'];
+const ASPECT_SHORT = ['FIT', 'FILL', 'STR', '16:9', '4:3'];
+
 function clock(s: number) {
   if (!Number.isFinite(s) || s < 0) s = 0;
   const h = Math.floor(s / 3600);
@@ -86,6 +89,17 @@ export function VideoPlayer({
 
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
+  // Picture shape, like VLC: fit, fill (crop), stretch, 16:9, 4:3. Remembered on this device.
+  const [aspect, setAspect] = useState(0);
+  useEffect(() => {
+    try { const a = Number(localStorage.getItem('gle:aspect')); if (a > 0 && a < ASPECTS.length) setAspect(a); } catch { /* ignore */ }
+  }, []);
+  const nextAspect = () => {
+    const a = (aspect + 1) % ASPECTS.length;
+    setAspect(a);
+    try { localStorage.setItem('gle:aspect', String(a)); } catch { /* ignore */ }
+    flash(`Picture: ${ASPECTS[a]}`);
+  };
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState((title.runtime_minutes ?? 0) * 60);
   const [idle, setIdle] = useState(false);
@@ -411,6 +425,7 @@ export function VideoPlayer({
       {src ? (
         <video
           ref={video}
+          className={`aspect-${aspect}`}
           playsInline
           preload="metadata"
           onClick={toggle}
@@ -549,6 +564,9 @@ export function VideoPlayer({
             }}
           >
             {muted ? <MuteIcon size={24} /> : <VolumeIcon size={24} />}
+          </button>
+          <button className="ctrl ctrl-aspect" aria-label={`Picture shape: ${ASPECTS[aspect]}. Tap to change`} title="Picture shape" onClick={nextAspect}>
+            <span>{ASPECT_SHORT[aspect]}</span>
           </button>
           <button className="ctrl" aria-label="Quality, subtitles and audio" onClick={() => flash('Quality, subtitle and audio options appear once video is connected.')}>
             <SettingsIcon size={24} />

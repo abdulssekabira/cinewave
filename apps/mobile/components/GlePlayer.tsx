@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import type { AdPlan } from '@cinewave/shared';
 import { AdLowerThird } from '@/components/AdLowerThird';
@@ -65,6 +66,11 @@ export function GlePlayer({
   const [locked, setLocked] = useState(false);
   const [lockHint, setLockHint] = useState(false);
   const [landscape, setLandscape] = useState(true);
+  // Picture shape, like VLC: fit, fill (crop), stretch, 16:9, 4:3.
+  const [aspect, setAspect] = useState(0);
+  useEffect(() => {
+    AsyncStorage.getItem('gle:aspect').then((v) => { const a = Number(v); if (a > 0 && a < ASPECTS.length) setAspect(a); }).catch(() => {});
+  }, []);
   const [hud, setHud] = useState<Hud>(null);
   const [seekPreview, setSeekPreview] = useState<number | null>(null);
   // A jump that is still loading: keep showing its target so the line doesn't snap back.
@@ -298,13 +304,29 @@ export function GlePlayer({
   const pos = seekPreview ?? shown;
   const pct = duration ? clamp(pos / duration) * 100 : 0;
   const controlsOn = visible && !locked && !hideControls;
+  const boxW = width;
+  const boxH = landscape ? height : Math.round((width * 9) / 16);
+  const nextAspect = () => {
+    const a = (aspect + 1) % ASPECTS.length;
+    setAspect(a);
+    AsyncStorage.setItem('gle:aspect', String(a)).catch(() => {});
+    showHud({ icon: 'scan-outline', label: `Picture: ${ASPECTS[a]}` });
+    poke();
+  };
   const side = landscape ? { paddingLeft: Math.max(insets.left, 16), paddingRight: Math.max(insets.right, 16) } : { paddingLeft: 10, paddingRight: 10 };
 
   return (
     <View style={s.wrap}>
       <StatusBar hidden={landscape} style="light" />
       <View style={landscape ? StyleSheet.absoluteFill : { width, height: Math.round((width * 9) / 16), marginTop: insets.top }}>
-      <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="contain" nativeControls={false} />
+      <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }]} pointerEvents="none">
+        <VideoView
+          player={player}
+          style={aspect >= 3 ? boxFor(aspect === 3 ? 16 / 9 : 4 / 3, boxW, boxH) : StyleSheet.absoluteFill}
+          contentFit={aspect === 1 ? 'cover' : aspect >= 2 ? 'fill' : 'contain'}
+          nativeControls={false}
+        />
+      </View>
 
       {/* Gesture layer (also catches taps while locked). */}
       <View style={StyleSheet.absoluteFill} {...pan.panHandlers} />
@@ -346,6 +368,9 @@ export function GlePlayer({
                 </Text>
               ) : null}
             </View>
+            <Pressable onPress={nextAspect} accessibilityLabel={`Picture shape: ${ASPECTS[aspect]}. Tap to change`} hitSlop={10} style={s.iconBtn}>
+              <Text style={s.aspectText}>{ASPECT_SHORT[aspect]}</Text>
+            </Pressable>
             <Pressable onPress={rotate} accessibilityLabel={landscape ? 'Small screen with suggestions' : 'Full screen'} hitSlop={10} style={s.iconBtn}>
               <Ionicons name={landscape ? 'contract-outline' : 'expand-outline'} size={22} color="#fff" />
             </Pressable>
@@ -420,7 +445,14 @@ export function GlePlayer({
   );
 }
 
+const ASPECTS = ['Fit', 'Fill screen', 'Stretch', '16:9', '4:3'];
+const ASPECT_SHORT = ['FIT', 'FILL', 'STR', '16:9', '4:3'];
+function boxFor(ratio: number, w: number, h: number) {
+  return w / h > ratio ? { width: Math.round(h * ratio), height: h } : { width: w, height: Math.round(w / ratio) };
+}
+
 const s = StyleSheet.create({
+  aspectText: { color: '#fff', fontFamily: F.bold, fontSize: 10, borderWidth: 1.5, borderColor: '#fff', borderRadius: 4, paddingHorizontal: 3, paddingVertical: 1 },
   wrap: { flex: 1, backgroundColor: '#000' },
   center: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   top: {

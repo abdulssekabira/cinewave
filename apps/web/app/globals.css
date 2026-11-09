@@ -284,7 +284,14 @@ a.chip:hover { background: rgba(255, 255, 255, .16); }
   border-radius: var(--radius-lg); overflow: hidden; background: #000;
   box-shadow: 0 30px 80px rgba(0, 0, 0, .6); user-select: none;
 }
-.player video { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; }
+.player { container-type: size; }
+.player video { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; object-fit: contain; }
+.player video.aspect-1 { object-fit: cover; }
+.player video.aspect-2 { object-fit: fill; }
+.player video.aspect-3, .player video.aspect-4 { inset: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); object-fit: fill; }
+.player video.aspect-3 { width: min(100cqw, calc(100cqh * 16 / 9)); height: min(100cqh, calc(100cqw * 9 / 16)); }
+.player video.aspect-4 { width: min(100cqw, calc(100cqh * 4 / 3)); height: min(100cqh, calc(100cqw * 3 / 4)); }
+.ctrl-aspect span { font-size: 11px; font-weight: 800; letter-spacing: .02em; border: 2px solid currentColor; border-radius: 5px; padding: 2px 4px; line-height: 1; white-space: nowrap; }
 .player-art { position: absolute; inset: 0; }
 .player-art img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; filter: brightness(.55); }
 .player-overlay {
