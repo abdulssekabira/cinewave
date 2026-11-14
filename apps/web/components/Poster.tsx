@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { posterPalette, vjLabel, type CatalogTitle } from '@cinewave/shared';
 import { PlayIcon } from './Icons';
+import { NewBadge } from './NewBadge';
 
 /** Generated artwork for titles that don't have a poster yet. */
 export function GeneratedArt({ title, className = 'poster-generated' }: { title: CatalogTitle; className?: string }) {
@@ -32,6 +33,7 @@ export function PosterCard({ title }: { title: CatalogTitle }) {
     <Link href={`/title/${title.slug}`} className="card">
       <div className="poster">
         <PlanBadge title={title} />
+        <NewBadge addedAt={title.added_at ?? null} episodeAt={title.latest_episode_at ?? null} kind={title.kind} />
         {title.kind === 'series' && (
           <span className="card-series">{title.episode_count ? `${title.episode_count} episodes` : 'Series'}</span>
         )}

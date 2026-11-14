@@ -154,7 +154,7 @@ export default function TitleScreen() {
             <Text style={styles.h1}>{title.title}</Text>
             <Rating title={title} style={{ marginTop: 8 }} />
             {isSeries && (
-              <Text style={styles.seriesTag}>SERIES{eps.length ? ` · ${eps.length} PARTS` : ''}</Text>
+              <Text style={styles.seriesTag}>SERIES{eps.length ? ` · ${eps.length} EPISODES` : ''}</Text>
             )}
             {(title.genres.length > 0 || title.vj_name) && (
               <View style={styles.chips}>

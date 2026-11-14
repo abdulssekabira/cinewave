@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { formatRuntime, posterPalette, ratingLabel, vjLabel, type CatalogTitle } from '@cinewave/shared';
+import { formatRuntime, newLabel, posterPalette, ratingLabel, vjLabel, type CatalogTitle } from '@cinewave/shared';
 import { colors, F, img, radius } from '@/lib/theme';
 
 const fill = { position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0 };
@@ -80,9 +80,12 @@ export function PosterCard({ title, width = 124 }: { title: CatalogTitle; width?
             <View style={[styles.poster, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}>
               <Art title={title} />
               <PlanTag title={title} />
+              {newLabel(title) ? (
+                <View style={styles.newTag}><Text style={styles.newText}>{newLabel(title)}</Text></View>
+              ) : null}
               {title.kind === 'series' && (
                 <View style={styles.seriesTag}>
-                  <Text style={styles.tagText}>{title.episode_count ? `${title.episode_count} PARTS` : 'SERIES'}</Text>
+                  <Text style={styles.tagText}>{title.episode_count ? `${title.episode_count} EPISODES` : 'SERIES'}</Text>
                 </View>
               )}
             </View>
@@ -144,6 +147,8 @@ export const styles = StyleSheet.create({
     position: 'absolute', top: 8, left: 8, backgroundColor: colors.accent,
     borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
   },
+  newTag: { position: 'absolute', top: 8, right: 8, backgroundColor: '#e50914', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  newText: { color: '#fff', fontFamily: F.extrabold, fontSize: 9, letterSpacing: 0.8 },
   tagText: { color: '#fff', fontFamily: F.bold, fontSize: 8.5, letterSpacing: 0.8 },
   cardTitle: { color: colors.text, fontFamily: F.semibold, fontSize: 13, marginTop: 8 },
   cardVj: { color: colors.accent, fontFamily: F.bold, fontSize: 11.5, marginTop: 1 },

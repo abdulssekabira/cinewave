@@ -36,6 +36,10 @@ export interface CatalogTitle {
   vj_photo_url?: string | null;
   kind?: 'movie' | 'series';
   episode_count?: number;
+  /** When the title became watchable for viewers. */
+  added_at?: string | null;
+  /** Series only: when the newest episode became watchable. */
+  latest_episode_at?: string | null;
 }
 
 /** One part of a series. */
@@ -141,4 +145,15 @@ export interface HomeRow {
   key: string;
   label: string;
   titles: CatalogTitle[];
+}
+
+/** Hours a title or episode counts as new. */
+export const NEW_HOURS = 24;
+
+/** 'NEW' for titles added in the last 24 hours, 'NEW EPISODE' for a series with a fresh episode. */
+export function newLabel(t: { added_at?: string | null; latest_episode_at?: string | null; kind?: string }, now = Date.now()): 'NEW' | 'NEW EPISODE' | null {
+  const fresh = (iso?: string | null) => !!iso && now - Date.parse(iso) < NEW_HOURS * 3600_000 && Date.parse(iso) <= now + 60_000;
+  if (fresh(t.added_at)) return 'NEW';
+  if (t.kind === 'series' && fresh(t.latest_episode_at)) return 'NEW EPISODE';
+  return null;
 }
