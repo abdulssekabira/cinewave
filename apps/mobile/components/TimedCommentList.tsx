@@ -18,6 +18,7 @@ export function TimedCommentList() {
   const signedIn = Boolean(session);
   const maxTime = useTimed((s) => s.maxTime);
   const reached = useTimed((s) => s.reached);
+  const open1st = useTimed((s) => s.open);
   const comments = useTimed((s) => s.comments);
   const visible = comments.filter((c) => c.at_seconds <= maxTime + 1).slice().reverse();
 
@@ -31,12 +32,15 @@ export function TimedCommentList() {
       {!signedIn && (
         <Pressable onPress={() => router.push('/login')}><Text style={st.note}><Text style={st.link}>Sign in</Text> to comment and reply.</Text></Pressable>
       )}
-      {signedIn && reached + 30 < maxTime && (
+      {signedIn && open1st && reached + 30 < maxTime && (
         <Text style={st.note}>You can comment and reply up to {clockLabel(reached)}, the part you’ve watched without skipping.</Text>
+      )}
+      {signedIn && !open1st && (
+        <Text style={st.note}>You’ve already watched this, so comments and replies are closed for you. They’re open only during your first time watching.</Text>
       )}
       {visible.length === 0
         ? <Text style={st.note}>No comments up to this point yet.</Text>
-        : visible.map((c) => <Item key={c.id} c={c} signedIn={signedIn} canReply={signedIn && c.at_seconds <= reached + 5} />)}
+        : visible.map((c) => <Item key={c.id} c={c} signedIn={signedIn} canReply={signedIn && open1st && c.at_seconds <= reached + 5} />)}
     </View>
   );
 }
@@ -116,7 +120,7 @@ function Item({ c, signedIn, canReply }: { c: TimedComment; signedIn: boolean; c
               <TextInput value={text} onChangeText={setText} maxLength={300} placeholder="Write a reply…" placeholderTextColor={colors.faint} style={st.input} returnKeyType="send" onSubmitEditing={reply} />
               <Pressable onPress={reply} disabled={busy || !text.trim()} style={[st.send, (busy || !text.trim()) && { opacity: 0.5 }]}><Text style={st.sendText}>{busy ? '…' : 'Reply'}</Text></Pressable>
             </View>
-          ) : signedIn ? (
+          ) : signedIn && getTimed().open ? (
             <Text style={st.note}>Watch up to {clockLabel(c.at_seconds)} without skipping to reply.</Text>
           ) : null}
           {err ? <Text style={st.err}>{err}</Text> : null}

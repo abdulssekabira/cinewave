@@ -15,12 +15,13 @@ export type TimedState = {
   time: number;      // current position
   maxTime: number;   // furthest position seen on this page (list shows up to here)
   reached: number;   // honest mark from the server
+  open: boolean;     // comments allowed (first time watching only)
   playing: boolean;
   comments: TimedComment[];
   loadedTo: number;
 };
 
-const initial: TimedState = { titleId: null, episodeId: null, time: 0, maxTime: 0, reached: 0, playing: false, comments: [], loadedTo: -1 };
+const initial: TimedState = { titleId: null, episodeId: null, time: 0, maxTime: 0, reached: 0, open: true, playing: false, comments: [], loadedTo: -1 };
 let state: TimedState = initial;
 const subs = new Set<() => void>();
 let loading = false;

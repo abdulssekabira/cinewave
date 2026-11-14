@@ -536,16 +536,24 @@ export interface TimedComment {
 }
 export interface TimedReply { id: string; body: string; author: string; created_at: string; mine: boolean }
 
-/** Tell the server how far we are (every ~10 s while playing). Returns the honest "reached" mark. */
-export async function trackWatch(sb: SupabaseClient, titleId: string, episodeId: string | null, pos: number): Promise<number | null> {
-  const { data, error } = await sb.rpc('track_watch', { t_id: titleId, e_id: episodeId, pos: Math.floor(pos) });
+/**
+ * Tell the server how far we are (every ~10 s while playing). Returns the honest
+ * "reached" mark and whether comments are still open (first time watching only).
+ */
+export async function trackWatch(sb: SupabaseClient, titleId: string, episodeId: string | null, pos: number, duration?: number | null): Promise<{ reached: number; open: boolean } | null> {
+  const { data, error } = await sb.rpc('track_watch_v2', {
+    t_id: titleId, e_id: episodeId, pos: Math.floor(pos),
+    dur: duration && Number.isFinite(duration) ? Math.floor(duration) : null,
+  });
   if (error) return null;
-  return Number(data ?? 0);
+  const r = (Array.isArray(data) ? data[0] : data) as { reached: number; open: boolean } | undefined;
+  return r ? { reached: Number(r.reached ?? 0), open: Boolean(r.open) } : null;
 }
 
-export async function getMyReach(sb: SupabaseClient, titleId: string, episodeId: string | null): Promise<number> {
-  const { data } = await sb.rpc('my_reach', { t_id: titleId, e_id: episodeId });
-  return Number(data ?? 0);
+export async function getMyCommentState(sb: SupabaseClient, titleId: string, episodeId: string | null): Promise<{ reached: number; open: boolean }> {
+  const { data } = await sb.rpc('my_comment_state', { t_id: titleId, e_id: episodeId });
+  const r = (Array.isArray(data) ? data[0] : data) as { reached: number; open: boolean } | undefined;
+  return { reached: Number(r?.reached ?? 0), open: r ? Boolean(r.open) : true };
 }
 
 export async function getTimedComments(sb: SupabaseClient, titleId: string, episodeId: string | null, from: number, to: number): Promise<TimedComment[]> {

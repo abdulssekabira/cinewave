@@ -16,6 +16,7 @@ import { getTimed, refreshTimed, useTimed } from '@/lib/timed-store';
 export function TimedCommentList({ signedIn, loginHref }: { signedIn: boolean; loginHref: string }) {
   const maxTime = useTimed((s) => s.maxTime);
   const reached = useTimed((s) => s.reached);
+  const open1st = useTimed((s) => s.open);
   const comments = useTimed((s) => s.comments);
   const visible = comments.filter((c) => c.at_seconds <= maxTime + 1).slice().reverse();
 
@@ -30,14 +31,17 @@ export function TimedCommentList({ signedIn, loginHref }: { signedIn: boolean; l
           ? <>Tap 💬 on the player to comment on the scene you&rsquo;re watching.</>
           : <><Link href={loginHref}>Sign in</Link> to comment and reply.</>}
       </p>
-      {signedIn && reached + 30 < maxTime && (
+      {signedIn && open1st && reached + 30 < maxTime && (
         <p className="rv-note">You can comment and reply up to <b>{clockLabel(reached)}</b>, the part you&rsquo;ve watched without skipping.</p>
+      )}
+      {signedIn && !open1st && (
+        <p className="rv-note">You&rsquo;ve already watched this, so comments and replies are closed for you. They&rsquo;re open only during your first time watching.</p>
       )}
       {visible.length === 0 ? (
         <p className="rv-note">No comments up to this point yet.</p>
       ) : (
         <ul className="rv-list">
-          {visible.map((c) => <Item key={c.id} c={c} signedIn={signedIn} canReply={signedIn && c.at_seconds <= reached + 5} />)}
+          {visible.map((c) => <Item key={c.id} c={c} signedIn={signedIn} canReply={signedIn && open1st && c.at_seconds <= reached + 5} />)}
         </ul>
       )}
     </section>
@@ -118,7 +122,7 @@ function Item({ c, signedIn, canReply }: { c: TimedComment; signedIn: boolean; c
               <button className="btn btn-accent btn-small" disabled={busy || !text.trim()}>{busy ? '…' : 'Reply'}</button>
               {err && <p className="tc-err" style={{ gridColumn: '1 / -1' }}>{err}</p>}
             </form>
-          ) : signedIn ? (
+          ) : signedIn && getTimed().open ? (
             <p className="rv-note">Watch up to {clockLabel(c.at_seconds)} without skipping to reply.</p>
           ) : null}
         </div>

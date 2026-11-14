@@ -16,6 +16,7 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
   time: number; playing: boolean; controlsOn: boolean; landscape: boolean; signedIn: boolean;
 }) {
   const reached = useTimed((s) => s.reached);
+  const open1st = useTimed((s) => s.open);
   const comments = useTimed((s) => s.comments);
   const [bubbles, setBubbles] = useState<(TimedComment & { key: number })[]>([]);
   const [on, setOn] = useState(true);
@@ -84,7 +85,7 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
     say('Comment posted');
   }
 
-  const allowed = at <= reached + 5;
+  const allowed = open1st && at <= reached + 5;
   const sideTop = landscape ? 70 : 52;
 
   return (
@@ -135,6 +136,8 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
                 </Pressable>
               </View>
             </>
+          ) : !open1st ? (
+            <Text style={st.err}>You’ve already watched this, so comments are closed for you. Comments are open only during your first time watching, but you can still read everyone’s.</Text>
           ) : (
             <Text style={st.err}>
               You can comment on scenes up to {clockLabel(reached)}, the part you&rsquo;ve watched without skipping. Go back to {clockLabel(reached)} and keep watching to comment further.

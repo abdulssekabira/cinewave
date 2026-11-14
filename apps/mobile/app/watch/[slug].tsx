@@ -8,7 +8,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { entitlementMessage, getAdPlan, getMyReach, getProfile, trackWatch, saveEpisodeProgress, saveProgress, vjLabel, type AdPlan, type EntitlementReason, type PlanId } from '@cinewave/shared';
+import { entitlementMessage, getAdPlan, getMyCommentState, getProfile, trackWatch, saveEpisodeProgress, saveProgress, vjLabel, type AdPlan, type EntitlementReason, type PlanId } from '@cinewave/shared';
 import { Button, Centered, Loading } from '@/components/ui';
 import { GlePlayer } from '@/components/GlePlayer';
 import { WatchBelow } from '@/components/WatchBelow';
@@ -99,13 +99,13 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
     timedControls.pause = () => player.pause();
     timedControls.play = () => player.play();
     timedControls.isPlaying = () => player.playing;
-    if (userId) getMyReach(supabase, info.title.id, epId).then((r) => setTimed({ reached: r })).catch(() => {});
+    if (userId) getMyCommentState(supabase, info.title.id, epId).then((r) => setTimed(r)).catch(() => {});
   }, [info.title.id, epId, userId, player]);
   useEffect(() => {
     if (!userId || !playing) return;
     const tick = () => {
       if (!player.playing) return;
-      trackWatch(supabase, info.title.id, epId, player.currentTime).then((r) => { if (r !== null) setTimed({ reached: Math.max(r, 0) }); });
+      trackWatch(supabase, info.title.id, epId, player.currentTime, player.duration).then((r) => { if (r) setTimed(r); });
     };
     tick();
     const t = setInterval(tick, 10000);

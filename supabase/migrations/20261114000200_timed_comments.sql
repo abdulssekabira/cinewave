@@ -197,3 +197,11 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke execute on function public.admin_timed_comments(int) from public, anon;
 grant execute on function public.admin_timed_comments(int) to authenticated;
+
+-- ---------------------------------------------------------------------
+-- Update: comments and replies only during the viewer's FIRST time
+-- watching a film/episode. Closes when they finish it (95% watched
+-- honestly, or marked completed), with 10 minutes' grace for the ending.
+-- Applied live as migrations timed_comments_first_watch_only + first_watch_open_tidy
+-- (track_watch_v2, my_comment_state, first_watch_open, post_timed_comment).
+-- ---------------------------------------------------------------------

@@ -17,6 +17,7 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
   const time = useTimed((s) => s.time);
   const playing = useTimed((s) => s.playing);
   const reached = useTimed((s) => s.reached);
+  const open1st = useTimed((s) => s.open);
   const comments = useTimed((s) => s.comments);
   const [bubbles, setBubbles] = useState<(TimedComment & { key: number })[]>([]);
   const [on, setOn] = useState(true);
@@ -86,7 +87,7 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
     setTimeout(() => setFlash(null), 1600);
   }
 
-  const allowed = at <= reached + 5;
+  const allowed = open1st && at <= reached + 5;
 
   return (
     <div className="tc-layer" onClick={(e) => e.stopPropagation()}>
@@ -130,6 +131,8 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
                 <button className="btn btn-accent btn-small" disabled={busy || !text.trim()}>{busy ? 'Posting…' : 'Post'}</button>
               </div>
             </>
+          ) : !open1st ? (
+            <p className="tc-err">You’ve already watched this, so comments are closed for you. Comments are open only during your first time watching, but you can still read everyone’s.</p>
           ) : (
             <p className="tc-err">
               You can comment on scenes up to <b>{clockLabel(reached)}</b>, the part you&rsquo;ve watched without skipping.

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { freshStreamUrl } from '@/app/watch/actions';
-import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle, vjLabel, getMyReach, trackWatch } from '@cinewave/shared';
+import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle, vjLabel, getMyCommentState, trackWatch } from '@cinewave/shared';
 import { saveWatchProgress } from '@/app/watch/[slug]/actions';
 import type { AdPlan } from '@cinewave/shared';
 import { AdLowerThird } from './AdLowerThird';
@@ -255,7 +255,7 @@ export function VideoPlayer({
     timedControls.pause = () => video.current?.pause();
     timedControls.play = () => { video.current?.play().catch(() => {}); };
     timedControls.isPlaying = () => Boolean(video.current && !video.current.paused);
-    if (signedIn) getMyReach(browserClient(), title.id, epId).then((r) => setTimed({ reached: r })).catch(() => {});
+    if (signedIn) getMyCommentState(browserClient(), title.id, epId).then((r) => setTimed(r)).catch(() => {});
   }, [title.id, epId, signedIn]);
   useEffect(() => { setTimed({ playing }); }, [playing]);
   useEffect(() => {
@@ -263,7 +263,7 @@ export function VideoPlayer({
     const tick = () => {
       const v = video.current;
       if (!v || v.paused) return;
-      trackWatch(browserClient(), title.id, epId, v.currentTime).then((r) => { if (r !== null) setTimed({ reached: Math.max(r, 0) }); });
+      trackWatch(browserClient(), title.id, epId, v.currentTime, v.duration).then((r) => { if (r) setTimed(r); });
     };
     tick();
     const t = setInterval(tick, 10000);
