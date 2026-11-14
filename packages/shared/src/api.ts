@@ -32,21 +32,32 @@ export async function getFeatured(sb: SupabaseClient): Promise<CatalogTitle | nu
 }
 
 /** Titles for the hero carousel: featured first, topped up with popular titles. */
-export async function getHeroTitles(sb: SupabaseClient, limit = 5): Promise<CatalogTitle[]> {
-  const { data, error } = await sb
-    .from(CATALOG)
-    .select('*')
-    .order('is_featured', { ascending: false })
-    .order('popularity', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data as CatalogTitle[];
+/**
+ * Newest uploads first: films by when they became watchable, series by their
+ * newest episode (or when they were added, whichever is later).
+ */
+export async function getLatestTitles(sb: SupabaseClient, limit = 20): Promise<CatalogTitle[]> {
+  const [byAdded, byEpisode] = await Promise.all([
+    sb.from(CATALOG).select('*').order('added_at', { ascending: false, nullsFirst: false }).limit(limit),
+    sb.from(CATALOG).select('*').eq('kind', 'series').not('latest_episode_at', 'is', null)
+      .order('latest_episode_at', { ascending: false }).limit(Math.min(limit, 10)),
+  ]);
+  if (byAdded.error) throw byAdded.error;
+  const seen = new Map<string, CatalogTitle>();
+  for (const t of [...(byAdded.data ?? []), ...(byEpisode.data ?? [])] as CatalogTitle[]) seen.set(t.id, t);
+  const at = (t: CatalogTitle) => Math.max(Date.parse(t.added_at ?? t.published_at ?? '') || 0, Date.parse(t.latest_episode_at ?? '') || 0);
+  return [...seen.values()].sort((a, b) => at(b) - at(a)).slice(0, limit);
+}
+
+/** The big banner on the home page: the newest uploads. */
+export async function getHeroTitles(sb: SupabaseClient, limit = 6): Promise<CatalogTitle[]> {
+  return getLatestTitles(sb, limit);
 }
 
 export async function getHomeRows(sb: SupabaseClient): Promise<HomeRow[]> {
-  const [trending, recent, free, collections] = await Promise.all([
+  const [trending, latest, free, collections] = await Promise.all([
     sb.from(CATALOG).select('*').order('popularity', { ascending: false }).limit(20),
-    sb.from(CATALOG).select('*').order('published_at', { ascending: false }).limit(20),
+    getLatestTitles(sb, 20).then((data) => ({ data, error: null })),
     sb.from(CATALOG).select('*').eq('required_plan', 'free').order('popularity', { ascending: false }).limit(20),
     sb
       .from('collections')
@@ -54,11 +65,11 @@ export async function getHomeRows(sb: SupabaseClient): Promise<HomeRow[]> {
       .eq('active', true)
       .order('sort_order'),
   ]);
-  for (const r of [trending, recent, free, collections]) if (r.error) throw r.error;
+  for (const r of [trending, free, collections]) if (r.error) throw r.error;
 
   const rows: HomeRow[] = [
+    { key: 'recent', label: 'Just Added', titles: latest.data },
     { key: 'trending', label: 'Trending This Week', titles: trending.data as CatalogTitle[] },
-    { key: 'recent', label: 'Recently Added', titles: recent.data as CatalogTitle[] },
     { key: 'free', label: 'Free to Watch', titles: free.data as CatalogTitle[] },
   ];
 
