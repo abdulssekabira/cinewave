@@ -887,3 +887,7 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .tc-reply .rv-body { margin-top: 4px; }
 .tc-reply-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
 .tc-reply-form .input { height: 38px; background: #26262b; }
+
+.tc-hint { pointer-events: auto; cursor: pointer; text-align: left; font: inherit; font-size: 14px; color: #fff; border: 0; border-left: 3px solid var(--accent); background: rgba(10,10,14,.88); display: block; }
+.tc-hint b { color: #fff; }
+.tc-hint u { color: #f5c518; text-decoration: none; font-weight: 700; white-space: nowrap; }

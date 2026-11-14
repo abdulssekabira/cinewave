@@ -29,6 +29,8 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
   const last = useRef<number | null>(null);
   const resume = useRef(false);
   const seq = useRef(0);
+  const [hint, setHint] = useState(false);
+  const hintDone = useRef(false);
 
   useEffect(() => { AsyncStorage.getItem(PREF).then((v) => setOn(v !== 'off')).catch(() => {}); }, []);
   useEffect(() => { setTimed({ time, maxTime: Math.max(getTimed().maxTime, time) }); ensureLoaded(time + 120); }, [time]);
@@ -50,6 +52,20 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
     setBubbles((b) => [...b, ...add].slice(-3));
     for (const a of add) setTimeout(() => setBubbles((b) => b.filter((x) => x.key !== a.key)), SHOW_MS);
   }, [time, playing, on, comments]);
+
+  // Once per film/episode on this phone: a notice that viewers can comment.
+  useEffect(() => {
+    if (hintDone.current || !playing || time < 120 || time > 900 || open || (signedIn && !open1st)) return;
+    hintDone.current = true;
+    const s = getTimed();
+    const key = `gle:hint:${s.episodeId ?? s.titleId}`;
+    AsyncStorage.getItem(key).then((v) => {
+      if (v) return;
+      AsyncStorage.setItem(key, '1').catch(() => {});
+      setHint(true);
+      setTimeout(() => setHint(false), 9000);
+    }).catch(() => {});
+  }, [time, playing, open, signedIn, open1st]);
 
   function say(m: string) { setFlash(m); setTimeout(() => setFlash(null), 1600); }
   function toggleBubbles() {
@@ -99,6 +115,20 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
             <Text style={st.btnSmall}>{on ? 'ON' : 'OFF'}</Text>
           </Pressable>
         </View>
+      )}
+
+      {!open && hint && (
+        <Pressable
+          onPress={() => { setHint(false); openBox(); }}
+          style={[st.bubble, st.hintBubble, { position: 'absolute', left: 12, bottom: (controlsOn ? (landscape ? 76 : 46) : landscape ? 20 : 10) + bubbles.length * 44, maxWidth: landscape ? 440 : '84%' }]}
+          accessibilityRole="button"
+        >
+          <Text style={st.bubbleText}>
+            <Text style={{ fontFamily: F.bold }}>💬 New! </Text>
+            {signedIn ? 'Comment on any scene. Others see it when they reach this moment. ' : 'Comment on scenes as you watch. '}
+            <Text style={{ color: GOLD, fontFamily: F.bold }}>{signedIn ? 'Tap to comment' : 'Sign in to join in'}</Text>
+          </Text>
+        </Pressable>
       )}
 
       {!open && bubbles.length > 0 && (
@@ -155,6 +185,7 @@ const st = StyleSheet.create({
   btnSmall: { color: '#fff', fontFamily: F.extrabold, fontSize: 10, letterSpacing: 0.5 },
   bubbles: { position: 'absolute', left: 12, gap: 6 },
   bubble: { backgroundColor: 'rgba(10,10,14,0.8)', borderLeftWidth: 3, borderLeftColor: GOLD, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6 },
+  hintBubble: { borderLeftColor: colors.accent, backgroundColor: 'rgba(10,10,14,0.9)' },
   bubbleText: { color: '#fff', fontFamily: F.medium, fontSize: 13, lineHeight: 18 },
   flash: { position: 'absolute', alignSelf: 'center', backgroundColor: 'rgba(20,20,24,0.92)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   flashText: { color: '#fff', fontFamily: F.semibold, fontSize: 13 },

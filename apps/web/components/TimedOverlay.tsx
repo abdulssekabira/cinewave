@@ -30,6 +30,10 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
   const last = useRef<number | null>(null);
   const resume = useRef(false);
   const seq = useRef(0);
+  const [hint, setHint] = useState(false);
+  const hintDone = useRef(false);
+  const open1stRef = useRef(true);
+  open1stRef.current = open1st;
 
   useEffect(() => { try { setOn(localStorage.getItem(PREF) !== 'off'); } catch { /* ignore */ } }, []);
   useEffect(() => { ensureLoaded(time + 120); }, [time]);
@@ -51,6 +55,17 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
     setBubbles((b) => [...b, ...add].slice(-3));
     for (const a of add) setTimeout(() => setBubbles((b) => b.filter((x) => x.key !== a.key)), SHOW_MS);
   }, [time, playing, on, comments]);
+
+  // Once per film/episode on this device: a notice that viewers can comment.
+  useEffect(() => {
+    if (hintDone.current || !playing || time < 120 || time > 900 || open || (signedIn && !open1stRef.current)) return;
+    const s = getTimed();
+    const key = `gle:hint:${s.episodeId ?? s.titleId}`;
+    hintDone.current = true;
+    try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { /* show anyway */ }
+    setHint(true);
+    setTimeout(() => setHint(false), 9000);
+  }, [time, playing, open, signedIn]);
 
   function toggleBubbles() {
     const next = !on;
@@ -103,6 +118,15 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
       </div>
 
       <div className={`tc-bubbles${raised ? ' raised' : ''}`} aria-live="polite" hidden={open}>
+        {hint && (signedIn ? (
+          <button type="button" className="tc-bubble tc-hint" onClick={() => { setHint(false); openBox(); }}>
+            <b>💬 New!</b> Comment on any scene. Others see it when they reach this moment. <u>Tap to comment</u>
+          </button>
+        ) : (
+          <Link href={loginHref} className="tc-bubble tc-hint">
+            <b>💬 New!</b> Comment on scenes as you watch. <u>Sign in to join in</u>
+          </Link>
+        ))}
         {bubbles.map((b) => (
           <div key={b.key} className="tc-bubble">
             <b>{b.mine ? 'You' : b.author}</b> {b.body}
