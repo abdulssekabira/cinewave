@@ -158,3 +158,19 @@ do $$ begin
     create policy "admins clear reports" on public.review_reports for delete using (public.has_role('admin'));
   end if;
 end $$;
+
+-- Update: viewers must watch at least 30 minutes (setting review_min_watch_min), or
+-- most of a shorter film; series add up minutes across episodes.
+insert into public.site_settings (key, value) values ('review_min_watch_min', '30') on conflict (key) do nothing;
+create or replace function public.has_watched(t_id uuid, u uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  with need as (select greatest(1, public.setting_int('review_min_watch_min', 30)) * 60 as s)
+  select exists (
+           select 1 from public.watch_progress w, need
+            where w.user_id = u and w.title_id = t_id and w.episode_id is null
+              and (w.completed or w.position_seconds >= least(need.s, greatest(60, coalesce(nullif(w.duration_seconds, 0) * 0.8, need.s)))))
+      or (select coalesce(sum(case when ep.completed then greatest(ep.position_seconds, coalesce(ep.duration_seconds, 0)) else ep.position_seconds end), 0)
+            from public.episode_progress ep join public.episodes e on e.id = ep.episode_id
+           where ep.user_id = u and e.title_id = t_id) >= (select s from need);
+$$;

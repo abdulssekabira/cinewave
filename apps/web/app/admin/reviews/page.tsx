@@ -20,7 +20,7 @@ export default async function ReviewsAdmin() {
     <>
       <h1 className="a-title">Reviews</h1>
       <p className="a-muted" style={{ marginTop: -6 }}>
-        Viewers who have watched a film can rate it (1–5 stars) and write a review. A review reported by 3 viewers is hidden automatically.
+        Viewers who have watched at least 30 minutes of a film can rate it (1–5 stars) and write a review. A review reported by 3 viewers is hidden automatically.
         Hidden and reported reviews are listed first{flagged ? ` (${flagged} need a look)` : ''}.
       </p>
       <section className="a-card">

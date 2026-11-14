@@ -46,7 +46,7 @@ export function Reviews({ titleId, slug, signedIn, compact }: { titleId: string;
   }, [sb, titleId]);
   useEffect(() => { load().catch(() => {}); }, [load]);
 
-  // Watching on the same page: once they've seen a minute, the form appears.
+  // Watching on the same page: once they've watched 30 minutes, the form appears.
   const waiting = Boolean(summary && !summary.canReview && signedIn);
   useEffect(() => {
     if (!waiting) return;
@@ -139,9 +139,9 @@ export function Reviews({ titleId, slug, signedIn, compact }: { titleId: string;
           </div>
         </form>
       ) : !signedIn ? (
-        <p className="rv-note"><Link href={`/login?next=/title/${slug}`}>Sign in</Link> to rate and review after watching.</p>
+        <p className="rv-note"><Link href={`/login?next=/title/${slug}`}>Sign in</Link> to rate and review after watching 30 minutes.</p>
       ) : !summary.canReview ? (
-        <p className="rv-note">Watch it first, then come back to rate it and share your view.</p>
+        <p className="rv-note">Watch at least 30 minutes, then you can rate it and share your view.</p>
       ) : null}
 
       {list.length === 0 ? (
