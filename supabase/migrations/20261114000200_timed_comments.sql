@@ -205,3 +205,12 @@ grant execute on function public.admin_timed_comments(int) to authenticated;
 -- Applied live as migrations timed_comments_first_watch_only + first_watch_open_tidy
 -- (track_watch_v2, my_comment_state, first_watch_open, post_timed_comment).
 -- ---------------------------------------------------------------------
+
+-- Has this account ever posted a scene comment or reply? (Stops the "you can comment" notice.)
+create or replace function public.i_have_commented()
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.timed_comments where user_id = auth.uid());
+$$;
+revoke execute on function public.i_have_commented() from public, anon;
+grant execute on function public.i_have_commented() to authenticated;

@@ -7,7 +7,7 @@ import {
 } from '@cinewave/shared';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import { getTimed, refreshTimed, useTimed } from '@/lib/timedStore';
+import { getTimed, refreshTimed, setTimed, useTimed } from '@/lib/timedStore';
 import { colors, F, radius } from '@/lib/theme';
 
 const GOLD = '#f5c518';
@@ -67,6 +67,7 @@ function Item({ c, signedIn, canReply }: { c: TimedComment; signedIn: boolean; c
     setBusy(false);
     if (r) { setErr(r); return; }
     setText(''); setErr(null);
+    setTimed({ commented: true });
     await load();
     refreshTimed();
   }

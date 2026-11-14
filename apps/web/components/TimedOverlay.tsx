@@ -18,6 +18,7 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
   const playing = useTimed((s) => s.playing);
   const reached = useTimed((s) => s.reached);
   const open1st = useTimed((s) => s.open);
+  const commented = useTimed((s) => s.commented);
   const comments = useTimed((s) => s.comments);
   const [bubbles, setBubbles] = useState<(TimedComment & { key: number })[]>([]);
   const [on, setOn] = useState(true);
@@ -58,14 +59,14 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
 
   // Once per film/episode on this device: a notice that viewers can comment.
   useEffect(() => {
-    if (hintDone.current || !playing || time < 120 || time > 900 || open || (signedIn && !open1stRef.current)) return;
+    if (hintDone.current || commented || !playing || time < 120 || time > 900 || open || (signedIn && !open1stRef.current)) return;
     const s = getTimed();
     const key = `gle:hint:${s.episodeId ?? s.titleId}`;
     hintDone.current = true;
     try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { /* show anyway */ }
     setHint(true);
     setTimeout(() => setHint(false), 9000);
-  }, [time, playing, open, signedIn]);
+  }, [time, playing, open, signedIn, commented]);
 
   function toggleBubbles() {
     const next = !on;
@@ -95,7 +96,7 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
     const r = await postTimedComment(browserClient(), getTimed().titleId!, getTimed().episodeId, at, text);
     setBusy(false);
     if (r) { setErr(r); return; }
-    setTimed({ loadedTo: Math.max(getTimed().loadedTo, at) });
+    setTimed({ loadedTo: Math.max(getTimed().loadedTo, at), commented: true });
     await refreshTimed();
     close();
     setFlash('Comment posted');
@@ -103,6 +104,7 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
   }
 
   const allowed = open1st && at <= reached + 5;
+  const showHint = hint && !commented;
 
   return (
     <div className="tc-layer" onClick={(e) => e.stopPropagation()}>
@@ -118,7 +120,7 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
       </div>
 
       <div className={`tc-bubbles${raised ? ' raised' : ''}`} aria-live="polite" hidden={open}>
-        {hint && (signedIn ? (
+        {showHint && (signedIn ? (
           <button type="button" className="tc-bubble tc-hint" onClick={() => { setHint(false); openBox(); }}>
             <b>💬 New!</b> Comment on any scene. Others see it when they reach this moment. <u>Tap to comment</u>
           </button>

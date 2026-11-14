@@ -17,6 +17,7 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
 }) {
   const reached = useTimed((s) => s.reached);
   const open1st = useTimed((s) => s.open);
+  const commented = useTimed((s) => s.commented);
   const comments = useTimed((s) => s.comments);
   const [bubbles, setBubbles] = useState<(TimedComment & { key: number })[]>([]);
   const [on, setOn] = useState(true);
@@ -55,7 +56,7 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
 
   // Once per film/episode on this phone: a notice that viewers can comment.
   useEffect(() => {
-    if (hintDone.current || !playing || time < 120 || time > 900 || open || (signedIn && !open1st)) return;
+    if (hintDone.current || commented || !playing || time < 120 || time > 900 || open || (signedIn && !open1st)) return;
     hintDone.current = true;
     const s = getTimed();
     const key = `gle:hint:${s.episodeId ?? s.titleId}`;
@@ -65,7 +66,7 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
       setHint(true);
       setTimeout(() => setHint(false), 9000);
     }).catch(() => {});
-  }, [time, playing, open, signedIn, open1st]);
+  }, [time, playing, open, signedIn, open1st, commented]);
 
   function say(m: string) { setFlash(m); setTimeout(() => setFlash(null), 1600); }
   function toggleBubbles() {
@@ -95,13 +96,14 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
     const r = await postTimedComment(supabase, s.titleId!, s.episodeId, at, text);
     setBusy(false);
     if (r) { setErr(r); return; }
-    setTimed({ loadedTo: Math.max(getTimed().loadedTo, at) });
+    setTimed({ loadedTo: Math.max(getTimed().loadedTo, at), commented: true });
     await refreshTimed();
     close();
     say('Comment posted');
   }
 
   const allowed = open1st && at <= reached + 5;
+  const showHint = hint && !commented;
   const sideTop = landscape ? 70 : 52;
 
   return (
@@ -117,7 +119,7 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
         </View>
       )}
 
-      {!open && hint && (
+      {!open && showHint && (
         <Pressable
           onPress={() => { setHint(false); openBox(); }}
           style={[st.bubble, st.hintBubble, { position: 'absolute', left: 12, bottom: (controlsOn ? (landscape ? 76 : 46) : landscape ? 20 : 10) + bubbles.length * 44, maxWidth: landscape ? 440 : '84%' }]}

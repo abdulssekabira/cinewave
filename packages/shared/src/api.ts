@@ -556,6 +556,12 @@ export async function getMyCommentState(sb: SupabaseClient, titleId: string, epi
   return { reached: Number(r?.reached ?? 0), open: r ? Boolean(r.open) : true };
 }
 
+/** True once this account has posted any scene comment or reply. */
+export async function haveCommented(sb: SupabaseClient): Promise<boolean> {
+  const { data } = await sb.rpc('i_have_commented');
+  return Boolean(data);
+}
+
 export async function getTimedComments(sb: SupabaseClient, titleId: string, episodeId: string | null, from: number, to: number): Promise<TimedComment[]> {
   const { data, error } = await sb.rpc('timed_comments_between', { t_id: titleId, e_id: episodeId, from_s: Math.floor(from), to_s: Math.ceil(to) });
   if (error) throw error;

@@ -8,7 +8,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { entitlementMessage, getAdPlan, getMyCommentState, getProfile, trackWatch, saveEpisodeProgress, saveProgress, vjLabel, type AdPlan, type EntitlementReason, type PlanId } from '@cinewave/shared';
+import { entitlementMessage, getAdPlan, getMyCommentState, getProfile, haveCommented, trackWatch, saveEpisodeProgress, saveProgress, vjLabel, type AdPlan, type EntitlementReason, type PlanId } from '@cinewave/shared';
 import { Button, Centered, Loading } from '@/components/ui';
 import { GlePlayer } from '@/components/GlePlayer';
 import { WatchBelow } from '@/components/WatchBelow';
@@ -99,7 +99,10 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
     timedControls.pause = () => player.pause();
     timedControls.play = () => player.play();
     timedControls.isPlaying = () => player.playing;
-    if (userId) getMyCommentState(supabase, info.title.id, epId).then((r) => setTimed(r)).catch(() => {});
+    if (userId) {
+      getMyCommentState(supabase, info.title.id, epId).then((r) => setTimed(r)).catch(() => {});
+      haveCommented(supabase).then((c) => { if (c) setTimed({ commented: true }); }).catch(() => {});
+    }
   }, [info.title.id, epId, userId, player]);
   useEffect(() => {
     if (!userId || !playing) return;

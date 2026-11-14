@@ -16,12 +16,13 @@ export type TimedState = {
   maxTime: number;   // furthest position seen on this page (list shows up to here)
   reached: number;   // honest mark from the server
   open: boolean;     // comments allowed (first time watching only)
+  commented: boolean; // this account has commented before (no more 'you can comment' notice)
   playing: boolean;
   comments: TimedComment[];
   loadedTo: number;
 };
 
-const initial: TimedState = { titleId: null, episodeId: null, time: 0, maxTime: 0, reached: 0, open: true, playing: false, comments: [], loadedTo: -1 };
+const initial: TimedState = { titleId: null, episodeId: null, time: 0, maxTime: 0, reached: 0, open: true, commented: false, playing: false, comments: [], loadedTo: -1 };
 let state: TimedState = initial;
 const subs = new Set<() => void>();
 let loading = false;
@@ -43,7 +44,7 @@ export function useTimed<T>(pick: (s: TimedState) => T): T {
 /** Start fresh for a film/episode. */
 export function resetTimed(titleId: string, episodeId: string | null) {
   if (state.titleId === titleId && state.episodeId === episodeId) return;
-  setTimed({ ...initial, titleId, episodeId });
+  setTimed({ ...initial, titleId, episodeId, commented: state.commented });
 }
 
 const merge = (a: TimedComment[], b: TimedComment[]) => {

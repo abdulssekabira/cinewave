@@ -7,7 +7,7 @@ import {
   type TimedComment, type TimedReply,
 } from '@cinewave/shared';
 import { browserClient } from '@/lib/supabase/browser';
-import { getTimed, refreshTimed, useTimed } from '@/lib/timed-store';
+import { getTimed, refreshTimed, setTimed, useTimed } from '@/lib/timed-store';
 
 /**
  * Under the player: comments up to the furthest point watched on this page,
@@ -73,6 +73,7 @@ function Item({ c, signedIn, canReply }: { c: TimedComment; signedIn: boolean; c
     setBusy(false);
     if (r) { setErr(r); return; }
     setText(''); setErr(null);
+    setTimed({ commented: true });
     await load();
     refreshTimed();
   }

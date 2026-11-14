@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { freshStreamUrl } from '@/app/watch/actions';
-import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle, vjLabel, getMyCommentState, trackWatch } from '@cinewave/shared';
+import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle, vjLabel, getMyCommentState, haveCommented, trackWatch } from '@cinewave/shared';
 import { saveWatchProgress } from '@/app/watch/[slug]/actions';
 import type { AdPlan } from '@cinewave/shared';
 import { AdLowerThird } from './AdLowerThird';
@@ -255,7 +255,10 @@ export function VideoPlayer({
     timedControls.pause = () => video.current?.pause();
     timedControls.play = () => { video.current?.play().catch(() => {}); };
     timedControls.isPlaying = () => Boolean(video.current && !video.current.paused);
-    if (signedIn) getMyCommentState(browserClient(), title.id, epId).then((r) => setTimed(r)).catch(() => {});
+    if (signedIn) {
+      getMyCommentState(browserClient(), title.id, epId).then((r) => setTimed(r)).catch(() => {});
+      haveCommented(browserClient()).then((c) => { if (c) setTimed({ commented: true }); }).catch(() => {});
+    }
   }, [title.id, epId, signedIn]);
   useEffect(() => { setTimed({ playing }); }, [playing]);
   useEffect(() => {
