@@ -68,6 +68,9 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
     setTimeout(() => setHint(false), 9000);
   }, [time, playing, open, signedIn, commented]);
 
+  const openRef = useRef<() => void>(() => {});
+  useEffect(() => { controls.openComment = () => openRef.current(); return () => { controls.openComment = undefined; }; }, []);
+
   function toggleBubbles() {
     const next = !on;
     setOn(next);
@@ -103,6 +106,7 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
     setTimeout(() => setFlash(null), 1600);
   }
 
+  openRef.current = openBox;
   const allowed = open1st && at <= reached + 5;
   const showHint = hint && !commented;
 
@@ -122,7 +126,7 @@ export function TimedOverlay({ signedIn, raised, loginHref }: { signedIn: boolea
       <div className={`tc-bubbles${raised ? ' raised' : ''}`} aria-live="polite" hidden={open}>
         {showHint && (signedIn ? (
           <button type="button" className="tc-bubble tc-hint" onClick={() => { setHint(false); openBox(); }}>
-            <b>💬 New!</b> Comment on any scene. Others see it when they reach this moment. <u>Tap to comment</u>
+            <b>💬 New!</b> Tap and hold the screen on any scene to comment. Others see it when they reach that moment. <u>Try it now</u>
           </button>
         ) : (
           <Link href={loginHref} className="tc-bubble tc-hint">

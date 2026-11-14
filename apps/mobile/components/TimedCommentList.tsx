@@ -27,7 +27,7 @@ export function TimedCommentList() {
       <Text style={st.h}>Scene comments{visible.length ? `  ·  ${visible.length}` : ''}</Text>
       <Text style={st.note}>
         Comments appear as you reach each moment, so nothing is spoiled.{' '}
-        {signedIn ? 'Tap the screen, then 💬 to comment on the scene you’re watching.' : ''}
+        {signedIn ? 'Tap and hold the screen on any scene to comment on it.' : ''}
       </Text>
       {!signedIn && (
         <Pressable onPress={() => router.push('/login')}><Text style={st.note}><Text style={st.link}>Sign in</Text> to comment and reply.</Text></Pressable>

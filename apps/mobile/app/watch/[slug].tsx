@@ -222,6 +222,7 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
       ads={ads}
       titleId={info.title.id}
       overlay={(o) => <TimedOverlay {...o} signedIn={Boolean(userId)} />}
+      onLongPress={() => timedControls.openComment?.()}
       below={<WatchBelow slug={info.title.slug} partId={info.episode?.id ?? null} />}
     >
       {!decided && resumeAt !== null && (

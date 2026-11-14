@@ -41,6 +41,7 @@ export function GlePlayer({
   ads,
   titleId,
   overlay,
+  onLongPress,
   children,
 }: {
   player: VideoPlayer;
@@ -57,6 +58,8 @@ export function GlePlayer({
   titleId?: string;
   /** Drawn over the film (e.g. scene comments). */
   overlay?: (s: { time: number; playing: boolean; controlsOn: boolean; landscape: boolean }) => ReactNode;
+  /** Tap and hold on the picture (e.g. comment on this scene). */
+  onLongPress?: () => void;
   children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -185,14 +188,30 @@ export function GlePlayer({
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
 
+  const longRef = useRef(onLongPress);
+  longRef.current = onLongPress;
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const held = useRef(false);
+  const clearHold = () => { if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; } };
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_e, s) => Math.abs(s.dx) > 8 || Math.abs(s.dy) > 8,
       onPanResponderGrant: (e) => {
         g.current = { mode: '', startVal: 0, startX: e.nativeEvent.locationX };
+        held.current = false;
+        clearHold();
+        if (longRef.current && !lockedRef.current) {
+          holdTimer.current = setTimeout(() => {
+            if (g.current.mode) return;
+            held.current = true;
+            longRef.current?.();
+          }, 550);
+        }
       },
       onPanResponderMove: (_e, s) => {
+        if (Math.abs(s.dx) > 10 || Math.abs(s.dy) > 10) clearHold();
+        if (held.current) return;
         if (lockedRef.current) return;
         const { width: w, height: h } = dims.current;
         if (!g.current.mode) {
@@ -225,6 +244,8 @@ export function GlePlayer({
         }
       },
       onPanResponderRelease: (e, s) => {
+        clearHold();
+        if (held.current) { held.current = false; g.current.mode = ''; return; }
         const mode = g.current.mode;
         g.current.mode = '';
         if (mode === 'seek') {

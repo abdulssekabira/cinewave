@@ -26,7 +26,7 @@ const initial: TimedState = { titleId: null, episodeId: null, time: 0, maxTime: 
 let state: TimedState = initial;
 const subs = new Set<() => void>();
 let loading = false;
-export const controls: { pause?: () => void; play?: () => void; isPlaying?: () => boolean } = {};
+export const controls: { pause?: () => void; play?: () => void; isPlaying?: () => boolean; openComment?: () => void } = {};
 
 export function setTimed(p: Partial<TimedState>) {
   state = { ...state, ...p };

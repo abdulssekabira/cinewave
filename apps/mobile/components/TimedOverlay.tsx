@@ -68,6 +68,9 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
     }).catch(() => {});
   }, [time, playing, open, signedIn, open1st, commented]);
 
+  const openRef = useRef<() => void>(() => {});
+  useEffect(() => { controls.openComment = () => openRef.current(); return () => { controls.openComment = undefined; }; }, []);
+
   function say(m: string) { setFlash(m); setTimeout(() => setFlash(null), 1600); }
   function toggleBubbles() {
     const next = !on;
@@ -102,6 +105,7 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
     say('Comment posted');
   }
 
+  openRef.current = openBox;
   const allowed = open1st && at <= reached + 5;
   const showHint = hint && !commented;
   const sideTop = landscape ? 70 : 52;
@@ -127,8 +131,8 @@ export function TimedOverlay({ time, playing, controlsOn, landscape, signedIn }:
         >
           <Text style={st.bubbleText}>
             <Text style={{ fontFamily: F.bold }}>💬 New! </Text>
-            {signedIn ? 'Comment on any scene. Others see it when they reach this moment. ' : 'Comment on scenes as you watch. '}
-            <Text style={{ color: GOLD, fontFamily: F.bold }}>{signedIn ? 'Tap to comment' : 'Sign in to join in'}</Text>
+            {signedIn ? 'Tap and hold the screen on any scene to comment. Others see it when they reach that moment. ' : 'Comment on scenes as you watch. '}
+            <Text style={{ color: GOLD, fontFamily: F.bold }}>{signedIn ? 'Try it now' : 'Sign in to join in'}</Text>
           </Text>
         </Pressable>
       )}

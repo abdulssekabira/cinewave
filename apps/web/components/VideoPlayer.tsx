@@ -248,6 +248,11 @@ export function VideoPlayer({
     };
   }, [playing]);
 
+  // Tap and hold on the picture opens the comment box.
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdStart = useRef<{ x: number; y: number } | null>(null);
+  const heldRef = useRef(false);
+
   // Timed comments: share where we are, and report honest progress every 10 s.
   const epId = episode?.id ?? null;
   useEffect(() => {
@@ -456,7 +461,20 @@ export function VideoPlayer({
           className={`aspect-${aspect}`}
           playsInline
           preload="metadata"
-          onClick={toggle}
+          onClick={() => { if (heldRef.current) { heldRef.current = false; return; } toggle(); }}
+          onPointerDown={(e) => {
+            const x = e.clientX, y = e.clientY;
+            holdStart.current = { x, y };
+            if (holdTimer.current) clearTimeout(holdTimer.current);
+            holdTimer.current = setTimeout(() => { heldRef.current = true; timedControls.openComment?.(); }, 550);
+          }}
+          onPointerMove={(e) => {
+            const h = holdStart.current;
+            if (h && Math.hypot(e.clientX - h.x, e.clientY - h.y) > 10 && holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; }
+          }}
+          onPointerUp={() => { if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; } }}
+          onPointerCancel={() => { if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null; } }}
+          onContextMenu={(e) => e.preventDefault()}
           onPlay={() => { setPlaying(true); wasPlaying.current = true; }}
           onPause={() => { setPlaying(false); wasPlaying.current = false; save(true); }}
           onTimeUpdate={(e) => {

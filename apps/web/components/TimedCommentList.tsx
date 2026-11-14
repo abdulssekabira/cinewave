@@ -28,7 +28,7 @@ export function TimedCommentList({ signedIn, loginHref }: { signedIn: boolean; l
       <p className="rv-note" style={{ marginTop: -6 }}>
         Comments appear as you reach each moment, so nothing is spoiled.{' '}
         {signedIn
-          ? <>Tap 💬 on the player to comment on the scene you&rsquo;re watching.</>
+          ? <>Tap and hold the screen (or tap 💬) on any scene to comment on it.</>
           : <><Link href={loginHref}>Sign in</Link> to comment and reply.</>}
       </p>
       {signedIn && open1st && reached + 30 < maxTime && (
