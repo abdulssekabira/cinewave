@@ -4,15 +4,17 @@ import { useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { vjLabel, type CatalogTitle } from '@cinewave/shared';
 import { colors, F, radius } from '@/lib/theme';
-import { Rating, WideArt } from './Poster';
+import { Art, Rating, WideArt } from './Poster';
 
 const GAP = 12;
 
 /** Large swipeable cards with a peek of the next one, plus page dots. */
 export function HeroCarousel({ titles }: { titles: CatalogTitle[] }) {
-  const { width } = useWindowDimensions();
-  const cardW = Math.min(width - 56, 520);
-  const cardH = Math.round(cardW * 0.62);
+  const { width, height } = useWindowDimensions();
+  // Phones held upright: tall cards with the portrait poster. Tablets/sideways: wide picture.
+  const upright = height > width && width < 700;
+  const cardW = upright ? Math.min(width - 80, 360) : Math.min(width - 56, 520);
+  const cardH = upright ? Math.round(cardW * 1.42) : Math.round(cardW * 0.62);
   const [index, setIndex] = useState(0);
 
   const onViewable = useRef(({ viewableItems }: { viewableItems: { index?: number | null }[] }) => {
@@ -39,7 +41,7 @@ export function HeroCarousel({ titles }: { titles: CatalogTitle[] }) {
             accessibilityLabel={item.title}
             style={({ pressed }) => [styles.card, { width: cardW, height: cardH }, pressed && { opacity: 0.9 }]}
           >
-            <WideArt title={item} />
+            {upright && item.poster_url ? <Art title={item} /> : <WideArt title={item} />}
             <LinearGradient
               colors={['transparent', 'rgba(10,10,16,0.25)', 'rgba(10,10,16,0.88)']}
               locations={[0.35, 0.6, 1]}

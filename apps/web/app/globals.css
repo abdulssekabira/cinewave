@@ -811,3 +811,8 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 }
 .card-new.ep { font-size: 9px; letter-spacing: .06em; }
 @keyframes card-new-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* Portrait poster as the hero on phones held upright: keep faces in view. */
+@media (orientation: portrait) and (max-width: 900px) {
+  .art-full.art-swap { object-position: center 15%; }
+}
