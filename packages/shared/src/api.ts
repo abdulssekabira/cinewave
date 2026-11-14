@@ -456,3 +456,69 @@ export function pickAd(ads: Ad[], avoidId?: string): Ad | null {
 export async function logAdEvent(sb: SupabaseClient, adId: string, kind: 'view' | 'click', titleId?: string) {
   await sb.rpc('log_ad_event', { a_id: adId, k: kind, t_id: titleId ?? null });
 }
+
+// ------------------------------------------------------------------ reviews
+
+export interface ReviewSummary {
+  average: number | null;
+  total: number;
+  counts: [number, number, number, number, number]; // 1★ … 5★
+  canReview: boolean;
+  myStars: number | null;
+}
+export interface Review {
+  id: string;
+  stars: number;
+  body: string | null;
+  author: string;
+  created_at: string;
+  updated_at: string;
+  mine: boolean;
+}
+
+export async function getReviewSummary(sb: SupabaseClient, titleId: string): Promise<ReviewSummary> {
+  const { data, error } = await sb.rpc('review_summary', { t_id: titleId });
+  if (error) throw error;
+  const r = (Array.isArray(data) ? data[0] : data) as Record<string, number | boolean | null> | undefined;
+  return {
+    average: r?.average != null ? Number(r.average) : null,
+    total: Number(r?.total ?? 0),
+    counts: [1, 2, 3, 4, 5].map((n) => Number(r?.[`s${n}`] ?? 0)) as ReviewSummary['counts'],
+    canReview: Boolean(r?.can_review),
+    myStars: r?.my_stars != null ? Number(r.my_stars) : null,
+  };
+}
+
+export async function getReviews(sb: SupabaseClient, titleId: string, offset = 0, limit = 10): Promise<Review[]> {
+  const { data, error } = await sb.rpc('title_reviews', { t_id: titleId, lim: limit, off: offset });
+  if (error) throw error;
+  return (data ?? []) as Review[];
+}
+
+/** Returns an error message, or null when saved. */
+export async function saveReview(sb: SupabaseClient, titleId: string, stars: number, body: string): Promise<string | null> {
+  const { data, error } = await sb.rpc('save_review', { t_id: titleId, n_stars: stars, n_body: body });
+  if (error) return 'Couldn’t save your review. Check your connection and try again.';
+  return (data as string | null) ?? null;
+}
+
+export async function deleteMyReview(sb: SupabaseClient, titleId: string) {
+  const { error } = await sb.rpc('delete_my_review', { t_id: titleId });
+  if (error) throw error;
+}
+
+export async function reportReview(sb: SupabaseClient, reviewId: string) {
+  const { error } = await sb.rpc('report_review', { r_id: reviewId });
+  if (error) throw error;
+}
+
+/** "3 days ago" style date for reviews. */
+export function timeAgo(iso: string, now = Date.now()): string {
+  const s = Math.max(0, (now - Date.parse(iso)) / 1000);
+  if (s < 60) return 'just now';
+  const m = s / 60, h = m / 60, d = h / 24;
+  if (m < 60) return `${Math.floor(m)} min ago`;
+  if (h < 24) return `${Math.floor(h)} h ago`;
+  if (d < 30) return `${Math.floor(d)} day${Math.floor(d) === 1 ? '' : 's'} ago`;
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}

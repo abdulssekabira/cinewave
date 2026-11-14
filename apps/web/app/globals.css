@@ -816,3 +816,40 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 @media (orientation: portrait) and (max-width: 900px) {
   .art-full.art-swap { object-position: center 15%; }
 }
+
+/* ================= Reviews ================= */
+.reviews { max-width: 860px; }
+.reviews.compact { max-width: none; }
+.rv-stars { letter-spacing: 1px; color: rgba(255, 255, 255, .22); white-space: nowrap; }
+.rv-stars .on { color: #f5c518; }
+.rv-summary { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+.rv-avg { display: grid; justify-items: center; gap: 2px; min-width: 110px; }
+.rv-avg b { font-size: 44px; line-height: 1; }
+.rv-avg span:last-child { font-size: 12.5px; color: var(--text-muted); }
+.rv-bars { flex: 1 1 220px; display: grid; gap: 5px; max-width: 360px; }
+.rv-bar { display: grid; grid-template-columns: 26px 1fr 28px; gap: 8px; align-items: center; font-size: 12px; color: var(--text-muted); }
+.rv-bar div { height: 7px; border-radius: 4px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+.rv-bar i { display: block; height: 100%; background: #f5c518; border-radius: 4px; }
+.rv-form { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 20px; display: grid; gap: 10px; }
+.rv-pick { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.rv-pick-label { font-weight: 700; font-size: 14px; margin-right: 8px; }
+.rv-pick button { background: none; border: 0; padding: 2px 3px; font-size: 30px; line-height: 1; color: rgba(255, 255, 255, .25); cursor: pointer; transition: transform .1s; }
+.rv-pick button.on { color: #f5c518; }
+.rv-pick button:hover { transform: scale(1.15); }
+.rv-form textarea { width: 100%; background: #26262b; min-height: 80px; }
+.rv-actions { display: flex; gap: 10px; align-items: center; }
+.rv-count { margin-left: auto; font-size: 12px; color: var(--text-muted); }
+.rv-note { color: var(--text-muted); font-size: 14px; margin: 0 0 16px; }
+.rv-note a { color: #fff; text-decoration: underline; }
+.rv-list { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; }
+.rv-item { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.rv-item.mine { border-color: rgba(229, 9, 20, .45); }
+.rv-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.rv-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+.rv-date { color: var(--text-muted); font-size: 12px; }
+.rv-body { margin: 8px 0 0; font-size: 14.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rv-tools { display: flex; gap: 14px; margin-top: 6px; font-size: 12.5px; color: var(--text-muted); }
+.rv-tools button { background: none; border: 0; padding: 0; color: var(--text-muted); cursor: pointer; font-size: 12.5px; }
+.rv-tools button:hover { color: #fff; text-decoration: underline; }
+
+.reviews-wrap { padding: 8px var(--gutter) 36px; }

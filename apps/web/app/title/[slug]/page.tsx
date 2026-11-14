@@ -20,6 +20,7 @@ import { createClient, getUser, viewerCountry } from '@/lib/supabase/server';
 import { HeroArt } from '@/components/HeroArt';
 import { DownloadIcon, PlayIcon, PlusIcon } from '@/components/Icons';
 import { PosterCard } from '@/components/Poster';
+import { Reviews } from '@/components/Reviews';
 import { Row } from '@/components/Row';
 import { TitleMeta } from '@/components/TitleMeta';
 import { WatchlistButton } from '@/components/WatchlistButton';
@@ -219,6 +220,10 @@ export default async function TitlePage({ params }: Props) {
             {title.content_warnings.length > 0 && (<><dt>Warnings</dt><dd>{title.content_warnings.join(', ')}</dd></>)}
           </dl>
         </div>
+      </div>
+
+      <div className="reviews-wrap">
+        <Reviews titleId={title.id} slug={title.slug} signedIn={Boolean(user)} />
       </div>
 
       {related.length > 0 && (

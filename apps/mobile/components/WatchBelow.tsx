@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { formatRuntime, getEpisodes, getRelated, getTitleBySlug, partLabel, vjLabel } from '@cinewave/shared';
 import { PosterCard } from '@/components/Poster';
+import { Reviews } from '@/components/Reviews';
 import { supabase } from '@/lib/supabase';
 import { colors, F, img, radius } from '@/lib/theme';
 import { useAsync } from '@/lib/useAsync';
@@ -71,6 +72,8 @@ export function WatchBelow({ slug, partId }: { slug: string; partId: string | nu
           })}
         </View>
       )}
+
+      <Reviews titleId={title.id} />
 
       {related.length > 0 && (
         <View style={{ marginTop: 20 }}>

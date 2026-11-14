@@ -23,6 +23,7 @@ import {
 } from '@cinewave/shared';
 import { Art, Rating } from '@/components/Poster';
 import { Button, Chip, Empty, ErrorState, IconCircle, Loading, Row } from '@/components/ui';
+import { Reviews } from '@/components/Reviews';
 import { useAuth } from '@/lib/auth';
 import { isPlayable, startDownload, useDownloads, type Download } from '@/lib/downloads';
 import { supabase } from '@/lib/supabase';
@@ -239,7 +240,9 @@ export default function TitleScreen() {
           )}
         </View>
 
-        {related.length > 0 && <Row label="More like this" titles={related} />}
+        <Reviews titleId={title.id} />
+
+        {related.length > 0 && <View style={{ marginTop: 22 }}><Row label="More like this" titles={related} /></View>}
       </ScrollView>
 
       {/* Top buttons */}
