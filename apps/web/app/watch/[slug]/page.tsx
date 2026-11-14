@@ -5,6 +5,7 @@ import { notFound, redirect } from 'next/navigation';
 import { formatRuntime, getAdPlan, getEpisodeProgress, getEpisodes, getProfile, getRelated, getTitleBySlug, partLabel, vjLabel } from '@cinewave/shared';
 import { getUser, viewerCountry } from '@/lib/supabase/server';
 import { Reviews } from '@/components/Reviews';
+import { TimedCommentList } from '@/components/TimedCommentList';
 import { BackIcon, PlayIcon } from '@/components/Icons';
 import { PosterCard } from '@/components/Poster';
 import { Row } from '@/components/Row';
@@ -120,6 +121,7 @@ export default async function WatchPage({ params, searchParams }: Props) {
             </ol>
           </section>
         )}
+        <TimedCommentList signedIn={Boolean(user)} loginHref={`/login?next=/watch/${title.slug}`} />
         <div style={{ marginTop: 28 }}>
           <Reviews titleId={title.id} slug={title.slug} signedIn={Boolean(user)} compact />
         </div>

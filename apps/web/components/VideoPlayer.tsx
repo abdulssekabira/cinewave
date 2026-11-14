@@ -3,10 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { freshStreamUrl } from '@/app/watch/actions';
-import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle, vjLabel } from '@cinewave/shared';
+import { formatRuntime, genreLabel, posterPalette, ratingLabel, type CatalogTitle, vjLabel, getMyReach, trackWatch } from '@cinewave/shared';
 import { saveWatchProgress } from '@/app/watch/[slug]/actions';
 import type { AdPlan } from '@cinewave/shared';
 import { AdLowerThird } from './AdLowerThird';
+import { TimedOverlay } from './TimedOverlay';
+import { controls as timedControls, resetTimed, setTimed, getTimed } from '@/lib/timed-store';
+import { browserClient } from '@/lib/supabase/browser';
 import { ExpandIcon, MuteIcon, PauseIcon, PlayIcon, SettingsIcon, StarIcon, VolumeIcon } from './Icons';
 
 const ASPECTS = ['Fit', 'Fill screen', 'Stretch', '16:9', '4:3'];
@@ -245,6 +248,28 @@ export function VideoPlayer({
     };
   }, [playing]);
 
+  // Timed comments: share where we are, and report honest progress every 10 s.
+  const epId = episode?.id ?? null;
+  useEffect(() => {
+    resetTimed(title.id, epId);
+    timedControls.pause = () => video.current?.pause();
+    timedControls.play = () => { video.current?.play().catch(() => {}); };
+    timedControls.isPlaying = () => Boolean(video.current && !video.current.paused);
+    if (signedIn) getMyReach(browserClient(), title.id, epId).then((r) => setTimed({ reached: r })).catch(() => {});
+  }, [title.id, epId, signedIn]);
+  useEffect(() => { setTimed({ playing }); }, [playing]);
+  useEffect(() => {
+    if (!signedIn || !playing) return;
+    const tick = () => {
+      const v = video.current;
+      if (!v || v.paused) return;
+      trackWatch(browserClient(), title.id, epId, v.currentTime).then((r) => { if (r !== null) setTimed({ reached: Math.max(r, 0) }); });
+    };
+    tick();
+    const t = setInterval(tick, 10000);
+    return () => clearInterval(t);
+  }, [signedIn, playing, title.id, epId]);
+
   // Keyboard: space/k play, ←/→ seek 10s, m mute, f fullscreen.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -440,6 +465,7 @@ export function VideoPlayer({
               pendingSeek.current = null;
             }
             setTime(now);
+            setTimed({ time: now, maxTime: Math.max(getTimed().maxTime, now) });
             if (!(duration > 0) || !Number.isFinite(duration)) readDuration(e.currentTarget);
             save();
           }}
@@ -488,6 +514,7 @@ export function VideoPlayer({
       )}
 
       {buffering && playing && src && <div className="player-spin" aria-label="Loading" />}
+      {src && <TimedOverlay signedIn={signedIn} raised={!idle} loginHref={`/login?next=/watch/${title.slug}`} />}
       {ads && <AdLowerThird plan={ads} time={time} playing={playing} titleId={title.id} raised={!idle} />}
 
       <div className="player-overlay">

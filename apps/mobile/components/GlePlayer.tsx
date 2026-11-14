@@ -40,6 +40,7 @@ export function GlePlayer({
   below,
   ads,
   titleId,
+  overlay,
   children,
 }: {
   player: VideoPlayer;
@@ -54,6 +55,8 @@ export function GlePlayer({
   /** Lower-third adverts for viewers on a plan with ads. */
   ads?: AdPlan | null;
   titleId?: string;
+  /** Drawn over the film (e.g. scene comments). */
+  overlay?: (s: { time: number; playing: boolean; controlsOn: boolean; landscape: boolean }) => ReactNode;
   children?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -419,6 +422,8 @@ export function GlePlayer({
         <AdLowerThird plan={ads} time={time} playing={playing} titleId={titleId} raised={controlsOn} landscape={landscape} />
       ) : null}
 
+      {overlay && !locked && !hideControls ? overlay({ time, playing, controlsOn, landscape }) : null}
+
       {(locked && lockHint) && (
         <View style={[s.lockWrap, { paddingTop: (landscape ? insets.top : 0) + 12 }]} pointerEvents="box-none">
           <Pressable onPress={toggleLock} accessibilityLabel="Unlock screen" style={s.lockBtn}>
@@ -435,7 +440,7 @@ export function GlePlayer({
       </View>
 
       {!landscape && below ? (
-        <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
+        <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: insets.bottom + 24 }} keyboardShouldPersistTaps="handled">
           {below}
         </ScrollView>
       ) : null}

@@ -522,3 +522,62 @@ export function timeAgo(iso: string, now = Date.now()): string {
   if (d < 30) return `${Math.floor(d)} day${Math.floor(d) === 1 ? '' : 's'} ago`;
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+// ------------------------------------------------------------------ timed comments
+
+export interface TimedComment {
+  id: string;
+  at_seconds: number;
+  body: string;
+  author: string;
+  created_at: string;
+  mine: boolean;
+  replies: number;
+}
+export interface TimedReply { id: string; body: string; author: string; created_at: string; mine: boolean }
+
+/** Tell the server how far we are (every ~10 s while playing). Returns the honest "reached" mark. */
+export async function trackWatch(sb: SupabaseClient, titleId: string, episodeId: string | null, pos: number): Promise<number | null> {
+  const { data, error } = await sb.rpc('track_watch', { t_id: titleId, e_id: episodeId, pos: Math.floor(pos) });
+  if (error) return null;
+  return Number(data ?? 0);
+}
+
+export async function getMyReach(sb: SupabaseClient, titleId: string, episodeId: string | null): Promise<number> {
+  const { data } = await sb.rpc('my_reach', { t_id: titleId, e_id: episodeId });
+  return Number(data ?? 0);
+}
+
+export async function getTimedComments(sb: SupabaseClient, titleId: string, episodeId: string | null, from: number, to: number): Promise<TimedComment[]> {
+  const { data, error } = await sb.rpc('timed_comments_between', { t_id: titleId, e_id: episodeId, from_s: Math.floor(from), to_s: Math.ceil(to) });
+  if (error) throw error;
+  return (data ?? []) as TimedComment[];
+}
+
+export async function getTimedReplies(sb: SupabaseClient, commentId: string): Promise<TimedReply[]> {
+  const { data, error } = await sb.rpc('timed_comment_replies', { c_id: commentId });
+  if (error) throw error;
+  return (data ?? []) as TimedReply[];
+}
+
+/** Error text, or null when posted. Pass parentId to reply (the time comes from the comment). */
+export async function postTimedComment(sb: SupabaseClient, titleId: string, episodeId: string | null, at: number, body: string, parentId?: string | null): Promise<string | null> {
+  const { data, error } = await sb.rpc('post_timed_comment', { t_id: titleId, e_id: episodeId, at: Math.floor(at), txt: body, parent: parentId ?? null });
+  if (error) return 'Couldn’t post. Check your connection and try again.';
+  return (data as string | null) ?? null;
+}
+
+export async function deleteMyTimedComment(sb: SupabaseClient, id: string) {
+  await sb.rpc('delete_my_timed_comment', { c_id: id });
+}
+
+export async function reportTimedComment(sb: SupabaseClient, id: string) {
+  await sb.rpc('report_timed_comment', { c_id: id });
+}
+
+/** 0:47 / 1:02:05 */
+export function clockLabel(s: number): string {
+  if (!Number.isFinite(s) || s < 0) s = 0;
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = Math.floor(s % 60);
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}` : `${m}:${String(x).padStart(2, '0')}`;
+}

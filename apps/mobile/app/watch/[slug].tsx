@@ -8,10 +8,12 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { entitlementMessage, getAdPlan, getProfile, saveEpisodeProgress, saveProgress, vjLabel, type AdPlan, type EntitlementReason, type PlanId } from '@cinewave/shared';
+import { entitlementMessage, getAdPlan, getMyReach, getProfile, trackWatch, saveEpisodeProgress, saveProgress, vjLabel, type AdPlan, type EntitlementReason, type PlanId } from '@cinewave/shared';
 import { Button, Centered, Loading } from '@/components/ui';
 import { GlePlayer } from '@/components/GlePlayer';
 import { WatchBelow } from '@/components/WatchBelow';
+import { TimedOverlay } from '@/components/TimedOverlay';
+import { controls as timedControls, resetTimed, setTimed } from '@/lib/timedStore';
 import { getPlayInfo, type PlayInfo } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -88,6 +90,27 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
   const [offline, setOffline] = useState(false);
   const [upNext, setUpNext] = useState<number | null>(null);
   const [ads, setAds] = useState<AdPlan | null>(null);
+
+  // Scene comments: share playback with the comment layer and list, and
+  // report honest progress every 10 s (only counts when not skipping ahead).
+  const epId = info.episode?.id ?? null;
+  useEffect(() => {
+    resetTimed(info.title.id, epId);
+    timedControls.pause = () => player.pause();
+    timedControls.play = () => player.play();
+    timedControls.isPlaying = () => player.playing;
+    if (userId) getMyReach(supabase, info.title.id, epId).then((r) => setTimed({ reached: r })).catch(() => {});
+  }, [info.title.id, epId, userId, player]);
+  useEffect(() => {
+    if (!userId || !playing) return;
+    const tick = () => {
+      if (!player.playing) return;
+      trackWatch(supabase, info.title.id, epId, player.currentTime).then((r) => { if (r !== null) setTimed({ reached: Math.max(r, 0) }); });
+    };
+    tick();
+    const t = setInterval(tick, 10000);
+    return () => clearInterval(t);
+  }, [userId, playing, info.title.id, epId, player]);
 
   // Adverts (only for plans with ads, on films whose rights allow them).
   useEffect(() => {
@@ -195,6 +218,7 @@ function Player({ info, userId }: { info: PlayInfo; userId: string | null }) {
       hideControls={(!decided && resumeAt !== null) || upNext !== null}
       ads={ads}
       titleId={info.title.id}
+      overlay={(o) => <TimedOverlay {...o} signedIn={Boolean(userId)} />}
       below={<WatchBelow slug={info.title.slug} partId={info.episode?.id ?? null} />}
     >
       {!decided && resumeAt !== null && (
