@@ -595,3 +595,18 @@ export function clockLabel(s: number): string {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = Math.floor(s % 60);
   return h ? `${h}:${String(m).padStart(2, '0')}:${String(x).padStart(2, '0')}` : `${m}:${String(x).padStart(2, '0')}`;
 }
+
+// ------------------------------------------------------------------ welcome promotion
+
+export interface SignupPromo { planId: string; planName: string; days: number }
+
+/** The welcome offer for new accounts (e.g. 30 days of Premium), or null when switched off. */
+export async function getSignupPromo(sb: SupabaseClient): Promise<SignupPromo | null> {
+  const { data } = await sb.from('site_settings').select('key, value').in('key', ['signup_promo_on', 'signup_promo_plan', 'signup_promo_days']);
+  const v = (k: string) => data?.find((r: { key: string; value: string | null }) => r.key === k)?.value ?? '';
+  if (v('signup_promo_on') !== '1') return null;
+  const planId = v('signup_promo_plan') || 'premium';
+  const days = Math.max(1, parseInt(v('signup_promo_days'), 10) || 30);
+  const { data: plan } = await sb.from('plans').select('id, name').eq('id', planId).maybeSingle();
+  return { planId, planName: (plan as { name?: string } | null)?.name ?? planId, days };
+}

@@ -105,6 +105,28 @@ export async function saveReferralSettings(_: FormState, form: FormData): Promis
   return { message: 'Saved. New sign-ups follow these rules.' };
 }
 
+/** Welcome promotion: a free plan for every new account. */
+export async function savePromoSettings(_: FormState, form: FormData): Promise<FormState> {
+  const { sb, isAdmin } = await requireStaff();
+  if (!isAdmin) return { error: 'Only the owner can change this.' };
+  const on = form.get('signup_promo_on') === 'on';
+  const plan = t(form, 'signup_promo_plan');
+  const days = Number(t(form, 'signup_promo_days'));
+  if (!Number.isInteger(days) || days < 1 || days > 365) return { error: 'Days must be a whole number from 1 to 365.' };
+  const { data: p } = await sb.from('plans').select('id').eq('id', plan).maybeSingle();
+  if (!p || plan === 'free') return { error: 'Choose a paid plan.' };
+  const now = new Date().toISOString();
+  const { error } = await sb.from('site_settings').upsert([
+    { key: 'signup_promo_on', value: on ? '1' : '0', updated_at: now },
+    { key: 'signup_promo_plan', value: plan, updated_at: now },
+    { key: 'signup_promo_days', value: String(days), updated_at: now },
+  ], { onConflict: 'key' });
+  if (error) return { error: error.message };
+  revalidatePath('/admin/plans');
+  revalidatePath('/login');
+  return { message: on ? `Saved. Every new account gets ${days} days free.` : 'Saved. The welcome offer is off.' };
+}
+
 /** Business contact details shown on the Terms, Privacy, Refunds, Copyright and Contact pages. */
 export async function saveContactSettings(_: FormState, form: FormData): Promise<FormState> {
   const { sb, isAdmin } = await requireStaff();

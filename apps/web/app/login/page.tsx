@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import { getSignupPromo } from '@cinewave/shared';
 import { AuthForm } from '@/components/AuthForm';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Sign in' };
 
@@ -11,9 +13,16 @@ export default async function LoginPage({ searchParams }: Props) {
   const mode = sp.mode === 'signup' || sp.mode === 'reset' ? sp.mode : 'signin';
   const next = sp.next?.startsWith('/') && !sp.next.startsWith('//') ? sp.next : '/';
   const refCode = (sp.ref ?? (await cookies()).get('gle_ref')?.value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) || undefined;
+  const promo = mode === 'signup' ? await getSignupPromo(await createClient()).catch(() => null) : null;
   return (
     <div className="auth-wrap">
       <div>
+        {promo && (
+          <div className="promo-banner" role="note">
+            <b>🎉 Welcome offer</b>
+            <span>Sign up today and get <strong>{promo.days} days of {promo.planName}</strong> free. No payment needed.</span>
+          </div>
+        )}
         {sp.error && (
           <div className="form-msg error" style={{ maxWidth: 400 }}>
             If you just confirmed your email, you&apos;re all set: sign in below. If you were resetting your password, request a new link.

@@ -1,14 +1,17 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/ui';
 import { signInWithIdentifier } from '@/lib/api';
+import { getSignupPromo, type SignupPromo } from '@cinewave/shared';
 import { supabase } from '@/lib/supabase';
 import { colors, F, radius } from '@/lib/theme';
 
 export default function Login() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [promo, setPromo] = useState<SignupPromo | null>(null);
+  useEffect(() => { getSignupPromo(supabase).then(setPromo).catch(() => {}); }, []);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -61,6 +64,14 @@ export default function Login() {
         <Text style={styles.sub}>
           {mode === 'signin' ? 'Sign in to sync your watchlist and progress.' : 'Free to join. Watch free films with ads.'}
         </Text>
+        {mode === 'signup' && promo && (
+          <View style={styles.promo}>
+            <Text style={styles.promoTitle}>🎉 Welcome offer</Text>
+            <Text style={styles.promoText}>
+              Sign up today and get <Text style={{ color: '#f5c518', fontFamily: F.bold }}>{promo.days} days of {promo.planName}</Text> free. No payment needed.
+            </Text>
+          </View>
+        )}
         {msg && (
           <Text style={[styles.msg, { color: msg.kind === 'error' ? colors.danger : colors.ok }]} accessibilityLiveRegion="polite">
             {msg.text}
@@ -146,6 +157,9 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
+  promo: { borderRadius: 12, padding: 12, marginBottom: 14, backgroundColor: 'rgba(229,9,20,0.16)', borderWidth: 1, borderColor: 'rgba(245,197,24,0.45)' },
+  promoTitle: { color: '#fff', fontFamily: F.bold, fontSize: 15, marginBottom: 2 },
+  promoText: { color: '#eee', fontFamily: F.regular, fontSize: 13.5, lineHeight: 19 },
   pwWrap: { position: 'relative', justifyContent: 'center' },
   eye: { position: 'absolute', right: 6, top: 0, height: 52, width: 44, alignItems: 'center', justifyContent: 'center' },
   wrap: { padding: 24, paddingTop: 12 },

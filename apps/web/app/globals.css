@@ -891,3 +891,8 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .tc-hint { pointer-events: auto; cursor: pointer; text-align: left; font: inherit; font-size: 14px; color: #fff; border: 0; border-left: 3px solid var(--accent); background: rgba(10,10,14,.88); display: block; }
 .tc-hint b { color: #fff; }
 .tc-hint u { color: #f5c518; text-decoration: none; font-weight: 700; white-space: nowrap; }
+
+.promo-banner { max-width: 400px; margin: 0 auto 14px; padding: 12px 14px; border-radius: 12px; display: grid; gap: 3px;
+  background: linear-gradient(135deg, rgba(229,9,20,.22), rgba(245,197,24,.16)); border: 1px solid rgba(245,197,24,.45); font-size: 14px; line-height: 1.45; }
+.promo-banner b { font-size: 15px; }
+.promo-banner strong { color: #f5c518; }

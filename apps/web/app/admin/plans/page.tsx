@@ -7,7 +7,12 @@ import { formatPrice } from '@cinewave/shared';
 import { PlanForm } from '@/components/admin/PlanForm';
 import { AppLinkForm } from '@/components/admin/AppLinkForm';
 import { ReferralForm } from '@/components/admin/ReferralForm';
+import { PromoForm } from '@/components/admin/PromoForm';
 import { ContactForm } from '@/components/admin/ContactForm';
+
+function plans_for_promo(p: unknown) {
+  return ((p ?? []) as { id: string; name: string }[]).map((x) => ({ id: x.id, name: x.name }));
+}
 
 export default async function AdminPlans() {
   const { sb, isAdmin } = await requireStaff();
@@ -25,6 +30,8 @@ export default async function AdminPlans() {
     sb.from('profiles').select('id', { count: 'exact', head: true }).not('referred_by', 'is', null),
     sb.from('profiles').select('id', { count: 'exact', head: true }).gt('referrals_rewarded', 0),
   ]);
+  const { count: promoGiven } = await sb.from('subscriptions').select('id', { count: 'exact', head: true }).like('provider_ref', 'promo-signup-%');
+  const promoPlans = plans_for_promo(p);
   const sandbox = pesapalSandbox();
   const plans = (p ?? []) as Plan[];
   const count = (id: string) => (subs ?? []).filter((s) => s.plan_id === id).length;
@@ -48,6 +55,16 @@ export default async function AdminPlans() {
           Shown on the Terms, Privacy, Refunds, Copyright and Contact pages (Pesapal and Google Play check these).
         </p>
         <ContactForm email={setting('contact_email')} phone={setting('contact_phone')} whatsapp={setting('contact_whatsapp')} />
+      </section>
+      <section className="a-card" style={{ marginTop: 24 }} id="welcome">
+        <h2>Welcome offer for new accounts</h2>
+        <PromoForm
+          on={setting('signup_promo_on') === '1'}
+          plan={setting('signup_promo_plan') || 'premium'}
+          days={setting('signup_promo_days') || '30'}
+          plans={(promoPlans ?? []) as { id: string; name: string }[]}
+          given={promoGiven ?? 0}
+        />
       </section>
       <section className="a-card" style={{ marginTop: 24 }} id="invites">
         <h2>Invite friends reward</h2>
