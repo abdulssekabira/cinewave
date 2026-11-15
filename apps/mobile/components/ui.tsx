@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { friendlyError } from '@/lib/api';
 import type { ComponentProps, ReactNode } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import type { CatalogTitle } from '@cinewave/shared';
@@ -130,7 +131,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
     <Centered>
       <Ionicons name="cloud-offline-outline" size={40} color={colors.faint} style={{ marginBottom: 12 }} />
       <Text style={s.emptyTitle}>Couldn’t load</Text>
-      <Text style={s.emptyText}>{message}</Text>
+      <Text style={s.emptyText}>{friendlyError(message)}</Text>
       <Button label="Retry" onPress={onRetry} style={{ marginTop: 18 }} />
       <Button label="Watch your downloads" variant="ghost" icon="download-outline" onPress={() => router.push('/downloads')} style={{ marginTop: 8 }} />
     </Centered>

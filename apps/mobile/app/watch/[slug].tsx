@@ -15,6 +15,7 @@ import { WatchBelow } from '@/components/WatchBelow';
 import { TimedOverlay } from '@/components/TimedOverlay';
 import { controls as timedControls, resetTimed, setTimed } from '@/lib/timedStore';
 import { getPlayInfo, type PlayInfo } from '@/lib/api';
+import { friendlyError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { colors, F } from '@/lib/theme';
@@ -44,7 +45,7 @@ export default function WatchScreen() {
   const load = useCallback(() => {
     setError(null);
     setInfo(null);
-    getPlayInfo(slug, part).then(setInfo).catch((e: Error) => setError(e.message));
+    getPlayInfo(slug, part).then(setInfo).catch((e: Error) => setError(friendlyError(e.message)));
   }, [slug, part]);
   useEffect(load, [load, session?.user.id]);
 

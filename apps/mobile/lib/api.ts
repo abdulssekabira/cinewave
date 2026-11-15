@@ -62,3 +62,12 @@ export async function signInWithIdentifier(identifier: string, password: string)
     return 'Could not reach GLE Movies. Check your connection.';
   }
 }
+
+/** Turns raw network errors (e.g. "java.net.SocketException: Connection reset") into plain words. */
+export function friendlyError(message: string | undefined | null): string {
+  const m = message ?? '';
+  if (/fetch failed|network request failed|socket|connection (reset|refused|closed)|timed? ?out|unable to resolve host|ECONN|ENOTFOUND|SSL|handshake/i.test(m)) {
+    return 'Can’t reach GLE Movies right now. Check your internet, or switch between Wi-Fi and mobile data, then try again.';
+  }
+  return m || 'Something went wrong. Try again.';
+}
