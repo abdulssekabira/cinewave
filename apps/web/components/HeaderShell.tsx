@@ -21,8 +21,9 @@ function Links({ signedIn }: { signedIn: boolean }) {
   const sp = useSearchParams();
   const sort = sp.get('sort');
   const items = [
-    { href: '/', label: 'Home', active: path === '/' },
-    { href: '/search', label: 'Movies', active: path === '/search' && sort !== 'newest' },
+    { href: '/', label: 'Home', active: path === '/', hideSm: true },
+    // On phones the search button already opens Movies, so signed-in viewers see My List there instead.
+    { href: '/search', label: 'Movies', active: path === '/search' && sort !== 'newest', hideSm: signedIn },
     { href: '/search?sort=newest', label: 'New & Popular', active: path === '/search' && sort === 'newest', hideSm: true },
     ...(signedIn ? [{ href: '/watchlist', label: 'My List', active: path === '/watchlist' }] : []),
   ];
