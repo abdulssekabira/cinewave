@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
+import { HelpLine } from '@/components/HelpLine';
 import { Header } from '@/components/Header';
 import { NewEpisodePopup } from '@/components/NewEpisodePopup';
 import '@fontsource/bebas-neue/400.css';
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Link href="/refunds">Refunds</Link>
           <Link href="/copyright">Copyright &amp; takedown</Link>
           <Link href="/contact">Contact &amp; help</Link>
+          <HelpLine compact title="Help:" />
         </footer>
       </body>
     </html>

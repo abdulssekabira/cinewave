@@ -907,3 +907,13 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
   .tc-btn { height: 34px; min-width: 34px; font-size: 15px; padding: 0 6px; }
   .tc-flash { top: auto; bottom: 70px; right: 50%; transform: translateX(50%); }
 }
+
+/* Help contact line */
+.helpline { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 10px; margin: 18px auto 0; max-width: 420px; font-size: 14px; color: var(--text-muted); }
+.helpline-title { width: 100%; text-align: center; }
+.helpline-btn { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); color: #fff; font-weight: 600; font-size: 13.5px; background: var(--surface); }
+.helpline-btn:hover { background: var(--surface-hover); }
+.helpline-btn.wa { background: #1f8f4e; border-color: #1f8f4e; }
+.helpline.compact { justify-content: flex-start; margin: 0; max-width: none; }
+.helpline.compact .helpline-title { width: auto; }
+.helpline.compact .helpline-btn { padding: 4px 10px; font-size: 12.5px; }

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/ui';
+import { HelpLine } from '@/components/HelpLine';
 import { signInWithIdentifier } from '@/lib/api';
 import { getSignupPromo, type SignupPromo } from '@cinewave/shared';
 import { supabase } from '@/lib/supabase';
@@ -151,6 +152,7 @@ export default function Login() {
             <Text style={{ color: colors.accent, fontFamily: F.bold }}>{mode === 'signin' ? 'Create an account' : 'Sign in'}</Text>
           </Text>
         </Pressable>
+      <HelpLine title={mode === 'signup' ? 'Having trouble signing up?' : 'Having trouble signing in?'} topic={mode === 'signup' ? 'signing up' : 'signing in'} style={{ marginBottom: 24 }} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

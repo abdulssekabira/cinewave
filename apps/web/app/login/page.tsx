@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { getSignupPromo } from '@cinewave/shared';
 import { AuthForm } from '@/components/AuthForm';
+import { HelpLine } from '@/components/HelpLine';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Sign in' };
@@ -29,6 +30,7 @@ export default async function LoginPage({ searchParams }: Props) {
           </div>
         )}
         <AuthForm mode={mode} next={next} refCode={refCode} />
+        <HelpLine title={mode === 'signup' ? 'Having trouble signing up?' : 'Having trouble signing in?'} topic={mode === 'signup' ? 'signing up' : 'signing in'} />
       </div>
     </div>
   );

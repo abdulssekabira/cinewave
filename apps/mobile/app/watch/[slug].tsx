@@ -12,6 +12,7 @@ import { entitlementMessage, getAdPlan, getMyCommentState, getProfile, haveComme
 import { Button, Centered, Loading } from '@/components/ui';
 import { GlePlayer } from '@/components/GlePlayer';
 import { WatchBelow } from '@/components/WatchBelow';
+import { HelpLine } from '@/components/HelpLine';
 import { TimedOverlay } from '@/components/TimedOverlay';
 import { controls as timedControls, resetTimed, setTimed } from '@/lib/timedStore';
 import { getPlayInfo, type PlayInfo } from '@/lib/api';
@@ -54,6 +55,7 @@ export default function WatchScreen() {
       <Centered>
         <Text style={styles.msg}>{error}</Text>
         <Button label="Try again" onPress={load} style={{ marginTop: 16 }} />
+        <HelpLine title="Still not working?" topic="playing a film" />
       </Centered>
     );
   }

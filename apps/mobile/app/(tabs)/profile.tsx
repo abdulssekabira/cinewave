@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View, Alert } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { formatPrice, getActiveSubscription, getPlans, getProfile, PLAN_LABEL } from '@cinewave/shared';
 import { Button, ErrorState, Loading, ScreenTitle, type IconName } from '@/components/ui';
+import { HelpLine } from '@/components/HelpLine';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { colors, F, radius } from '@/lib/theme';
@@ -85,6 +86,9 @@ export default function Profile() {
             </Text>
           </View>
         ))}
+        <Text style={styles.h2}>Help & contact</Text>
+        <HelpLine title="Questions, payments or trouble signing in? Talk to us." style={{ marginTop: 4, alignItems: 'flex-start' }} />
+
         <Text style={styles.note}>
           To subscribe or add more time, visit glemovies.com in your browser and pay with MTN MoMo, Airtel Money or card. Your plan then works here straight away.
         </Text>

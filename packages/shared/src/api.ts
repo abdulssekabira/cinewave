@@ -611,3 +611,26 @@ export async function getSignupPromo(sb: SupabaseClient): Promise<SignupPromo | 
   const devices = Math.max(1, parseInt(v('signup_promo_devices'), 10) || 2);
   return { planId, planName: (plan as { name?: string } | null)?.name ?? planId, days, devices };
 }
+
+// ------------------------------------------------------------------ help contact
+
+export interface ContactInfo { phone: string | null; whatsapp: string | null; email: string | null }
+
+/** The owner's help contacts (Admin → Plans → Contact details). Empty fields are null. */
+export async function getContactInfo(sb: SupabaseClient): Promise<ContactInfo> {
+  const { data } = await sb.from('site_settings').select('key, value').in('key', ['contact_phone', 'contact_whatsapp', 'contact_email']);
+  const get = (k: string) => (data as { key: string; value: string | null }[] | null)?.find((r) => r.key === k)?.value?.trim() || null;
+  return { phone: get('contact_phone'), whatsapp: get('contact_whatsapp'), email: get('contact_email') };
+}
+
+/** International digits for a Ugandan-style number: 0772… → 256772…, +256… → 256… */
+export function phoneDigits(n: string): string {
+  let d = n.replace(/[^\d+]/g, '');
+  if (d.startsWith('+')) d = d.slice(1);
+  else if (d.startsWith('00')) d = d.slice(2);
+  else if (d.startsWith('0') && d.length === 10) d = `256${d.slice(1)}`;
+  return d.replace(/\D/g, '');
+}
+export const whatsappLink = (n: string, text = 'Hello GLE Movies, I need help with ') =>
+  `https://wa.me/${phoneDigits(n)}?text=${encodeURIComponent(text)}`;
+export const telLink = (n: string) => `tel:+${phoneDigits(n)}`;
