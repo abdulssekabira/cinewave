@@ -76,17 +76,19 @@ button, input, select { font: inherit; color: inherit; }
 }
 .signin-link:hover { background: var(--accent-hover); }
 @media (max-width: 760px) {
-  .site-header { gap: 14px; }
-  .nav { gap: 16px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+  /* Phones: logo + buttons on the first line, the menu words on a second line. */
+  :root { --header-h: 104px; }
+  .site-header { flex-wrap: wrap; align-content: center; row-gap: 6px; column-gap: 10px; }
+  .wordmark { flex: 1; font-size: 32px; min-width: 0; }
+  .header-actions { gap: 8px; }
+  .nav { order: 3; flex: 1 0 100%; gap: 22px; overflow-x: auto; scrollbar-width: none; min-width: 0; padding-bottom: 2px; }
   .nav::-webkit-scrollbar { display: none; }
-  .nav a.hide-sm { display: none; }
-  .nav { gap: 14px; }
-  .nav a { font-size: 13.5px; }
-  .wordmark { font-size: 26px; }
-  .header-actions { gap: 6px; }
+  .nav a { font-size: 14.5px; }
 }
-@media (max-width: 400px) {
-  .wordmark { font-size: 23px; }
+@media (max-width: 380px) {
+  .wordmark { font-size: 27px; }
+  .nav { gap: 16px; }
+  .nav a { font-size: 13.5px; }
 }
 
 /* ================= Buttons ================= */
