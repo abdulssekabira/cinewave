@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import type { AdPlan } from '@cinewave/shared';
 import { AdLowerThird } from '@/components/AdLowerThird';
+import { reportError } from '@/lib/report';
 import { useEventListener } from 'expo';
 import * as Brightness from 'expo-brightness';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -130,7 +131,15 @@ export function GlePlayer({
     if (player.duration && player.duration !== duration) setDuration(player.duration);
   });
   useEventListener(player, 'playingChange', (e) => setPlaying(e.isPlaying));
-  useEventListener(player, 'statusChange', (e) => setLoading(e.status === 'loading'));
+  const [playError, setPlayError] = useState<string | null>(null);
+  useEventListener(player, 'statusChange', (e) => {
+    setLoading(e.status === 'loading');
+    if (e.status === 'error') {
+      const m = e.error?.message ?? 'unknown';
+      setPlayError(m);
+      reportError('playback', m, `${title}${subtitle ? ` · ${subtitle}` : ''}`);
+    } else if (e.status === 'readyToPlay') setPlayError(null);
+  });
 
   // ---------------------------------------------------------- controls visibility
   const poke = useCallback(() => {
@@ -355,6 +364,20 @@ export function GlePlayer({
       {/* Gesture layer (also catches taps while locked). */}
       <View style={StyleSheet.absoluteFill} {...pan.panHandlers} />
 
+      {playError && (
+        <View style={s.errBox}>
+          <Text style={s.errTitle}>This video won’t play on this phone</Text>
+          <Text style={s.errText}>
+            {/source|decoder|codec|format|unrecognized|extractor/i.test(playError)
+              ? 'The video file isn’t supported by this phone’s player. Try streaming it instead, or tell us so we can fix the file.'
+              : 'Check your connection and try again. If it keeps happening, tell us.'}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+            <Pressable onPress={() => { setPlayError(null); player.replay(); }} style={s.errBtn}><Text style={s.errBtnText}>Try again</Text></Pressable>
+            <Pressable onPress={onBack} style={[s.errBtn, { backgroundColor: 'rgba(255,255,255,0.14)' }]}><Text style={s.errBtnText}>Back</Text></Pressable>
+          </View>
+        </View>
+      )}
       {loading && !hideControls && (
         <View style={s.center} pointerEvents="none"><ActivityIndicator size="large" color="#fff" /></View>
       )}
@@ -478,6 +501,11 @@ function boxFor(ratio: number, w: number, h: number) {
 }
 
 const s = StyleSheet.create({
+  errBox: { position: 'absolute', alignSelf: 'center', top: '30%', width: '86%', maxWidth: 420, padding: 18, borderRadius: 16, backgroundColor: 'rgba(16,16,22,0.95)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center' },
+  errTitle: { color: '#fff', fontFamily: F.bold, fontSize: 16, textAlign: 'center' },
+  errText: { color: 'rgba(255,255,255,0.8)', fontFamily: F.regular, fontSize: 13.5, lineHeight: 19, textAlign: 'center', marginTop: 6 },
+  errBtn: { backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 10 },
+  errBtnText: { color: '#fff', fontFamily: F.bold, fontSize: 14 },
   aspectText: { color: '#fff', fontFamily: F.bold, fontSize: 10, borderWidth: 1.5, borderColor: '#fff', borderRadius: 4, paddingHorizontal: 3, paddingVertical: 1 },
   wrap: { flex: 1, backgroundColor: '#000' },
   center: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },

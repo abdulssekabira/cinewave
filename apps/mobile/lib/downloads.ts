@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react';
 import { getProfile } from '@cinewave/shared';
 import { authHeaders, SITE, UA } from './api';
 import { supabase } from './supabase';
+import { reportError } from './report';
 
 /**
  * Protected offline downloads.
@@ -188,7 +189,9 @@ export async function startDownload(userId: string, slug: string, part?: string 
 
   const d = dir();
   if (!d.exists) d.create({ intermediates: true, idempotent: true });
-  const file = new File(d, `${body.download_id}.mp4`);
+  // Keep the real file type (most films are .mkv); a wrong ending can confuse the player.
+  const ext = (body.url.split('?')[0].match(/\.(mp4|m4v|mkv|webm|mov)$/i)?.[1] ?? 'mp4').toLowerCase();
+  const file = new File(d, `${body.download_id}.${ext}`);
   if (file.exists) file.delete();
 
   const item: Download = {
@@ -231,8 +234,9 @@ export async function startDownload(userId: string, slug: string, part?: string 
       update(item.id, { status: 'done', bytes: f.size ?? item.bytes, received: f.size ?? item.received });
       persist(true);
     })
-    .catch(() => {
+    .catch((e: Error) => {
       if (!items.some((x) => x.id === item.id)) return; // deleted meanwhile
+      reportError('download', e?.message ?? 'download failed', item.title);
       update(item.id, { status: 'failed', error: 'Download stopped. Check your connection and tap Retry.' });
       persist(true);
     })
