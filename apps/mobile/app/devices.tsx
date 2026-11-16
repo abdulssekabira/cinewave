@@ -24,7 +24,8 @@ export default function Devices() {
       supabase.rpc('is_staff'),
     ]);
     const { data: p } = await supabase.from('plans').select('name, max_devices').eq('id', plan ?? 'free').maybeSingle();
-    return { devices: (devs ?? []) as Device[], limit: (p?.max_devices as number | null) ?? null, planName: p?.name ?? 'Free', staff: Boolean(staff) };
+    const { data: lim } = await supabase.rpc('device_limit');
+    return { devices: (devs ?? []) as Device[], limit: (lim as number | null) ?? (p?.max_devices as number | null) ?? null, planName: p?.name ?? 'Free', staff: Boolean(staff) };
   }, [session?.user.id]);
 
   if (!session) {

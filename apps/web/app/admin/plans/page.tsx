@@ -62,6 +62,7 @@ export default async function AdminPlans() {
           on={setting('signup_promo_on') === '1'}
           plan={setting('signup_promo_plan') || 'premium'}
           days={setting('signup_promo_days') || '30'}
+          devices={setting('signup_promo_devices') || '2'}
           plans={(promoPlans ?? []) as { id: string; name: string }[]}
           given={promoGiven ?? 0}
         />

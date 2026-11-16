@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: Props) {
         {promo && (
           <div className="promo-banner" role="note">
             <b>🎉 Welcome offer</b>
-            <span>Sign up today and get <strong>{promo.days} days of {promo.planName}</strong> free. No payment needed.</span>
+            <span>Sign up today and get <strong>{promo.days} days of {promo.planName}</strong> free on up to {promo.devices} devices. No payment needed.</span>
           </div>
         )}
         {sp.error && (

@@ -29,7 +29,9 @@ export default async function AccountPage() {
   const earned = ref ? ref.rewards >= ref.max_rewards : false;
   // Staff are never limited (they test on many devices).
   const devices = ((devRes.data ?? []) as Device[]).map((d) => (staff ? { ...d, allowed: true } : d));
-  const limit = (planRes?.max_devices as number | null | undefined) ?? null;
+  // The welcome offer can have a lower device limit than the plan itself.
+  const { data: lim } = await sb.rpc('device_limit');
+  const limit = (lim as number | null | undefined) ?? (planRes?.max_devices as number | null | undefined) ?? null;
   const blocked = devices.some((d) => d.is_current && !d.allowed);
   const when = (iso: string) =>
     new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: TZ });

@@ -113,6 +113,8 @@ export async function savePromoSettings(_: FormState, form: FormData): Promise<F
   const plan = t(form, 'signup_promo_plan');
   const days = Number(t(form, 'signup_promo_days'));
   if (!Number.isInteger(days) || days < 1 || days > 365) return { error: 'Days must be a whole number from 1 to 365.' };
+  const devices = Number(t(form, 'signup_promo_devices'));
+  if (!Number.isInteger(devices) || devices < 1 || devices > 20) return { error: 'Devices must be a whole number from 1 to 20.' };
   const { data: p } = await sb.from('plans').select('id').eq('id', plan).maybeSingle();
   if (!p || plan === 'free') return { error: 'Choose a paid plan.' };
   const now = new Date().toISOString();
@@ -120,11 +122,12 @@ export async function savePromoSettings(_: FormState, form: FormData): Promise<F
     { key: 'signup_promo_on', value: on ? '1' : '0', updated_at: now },
     { key: 'signup_promo_plan', value: plan, updated_at: now },
     { key: 'signup_promo_days', value: String(days), updated_at: now },
+    { key: 'signup_promo_devices', value: String(devices), updated_at: now },
   ], { onConflict: 'key' });
   if (error) return { error: error.message };
   revalidatePath('/admin/plans');
   revalidatePath('/login');
-  return { message: on ? `Saved. Every new account gets ${days} days free.` : 'Saved. The welcome offer is off.' };
+  return { message: on ? `Saved. Every new account gets ${days} days free on up to ${devices} devices.` : 'Saved. The welcome offer is off.' };
 }
 
 /** Business contact details shown on the Terms, Privacy, Refunds, Copyright and Contact pages. */

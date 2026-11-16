@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { savePromoSettings, type FormState } from '@/app/admin/plans/actions';
 
-export function PromoForm({ on, plan, days, plans, given }: { on: boolean; plan: string; days: string; plans: { id: string; name: string }[]; given: number }) {
+export function PromoForm({ on, plan, days, devices, plans, given }: { on: boolean; plan: string; days: string; devices: string; plans: { id: string; name: string }[]; given: number }) {
   const [state, action, pending] = useActionState<FormState, FormData>(savePromoSettings, {});
   return (
     <form action={action}>
@@ -22,6 +22,10 @@ export function PromoForm({ on, plan, days, plans, given }: { on: boolean; plan:
         <div className="a-field">
           <label htmlFor="pf-d">For how many days</label>
           <input id="pf-d" name="signup_promo_days" className="input" inputMode="numeric" defaultValue={days} />
+        </div>
+        <div className="a-field">
+          <label htmlFor="pf-v">Devices allowed</label>
+          <input id="pf-v" name="signup_promo_devices" className="input" inputMode="numeric" defaultValue={devices} />
         </div>
       </div>
       <p className="a-muted" style={{ margin: '4px 0 12px' }}>

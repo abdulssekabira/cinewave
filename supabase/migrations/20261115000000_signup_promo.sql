@@ -48,3 +48,8 @@ do $$ begin
       for each row execute function public.on_user_created_promo();
   end if;
 end $$;
+
+-- Update: welcome-offer viewers may use at most N devices (default 2), even if the
+-- plan itself allows more. Applied live as migration promo_device_limit
+-- (device_limit(), my_devices(), device_allowed() now use it).
+insert into public.site_settings (key, value) values ('signup_promo_devices', '2') on conflict (key) do nothing;

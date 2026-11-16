@@ -598,15 +598,16 @@ export function clockLabel(s: number): string {
 
 // ------------------------------------------------------------------ welcome promotion
 
-export interface SignupPromo { planId: string; planName: string; days: number }
+export interface SignupPromo { planId: string; planName: string; days: number; devices: number }
 
 /** The welcome offer for new accounts (e.g. 30 days of Premium), or null when switched off. */
 export async function getSignupPromo(sb: SupabaseClient): Promise<SignupPromo | null> {
-  const { data } = await sb.from('site_settings').select('key, value').in('key', ['signup_promo_on', 'signup_promo_plan', 'signup_promo_days']);
+  const { data } = await sb.from('site_settings').select('key, value').in('key', ['signup_promo_on', 'signup_promo_plan', 'signup_promo_days', 'signup_promo_devices']);
   const v = (k: string) => data?.find((r: { key: string; value: string | null }) => r.key === k)?.value ?? '';
   if (v('signup_promo_on') !== '1') return null;
   const planId = v('signup_promo_plan') || 'premium';
   const days = Math.max(1, parseInt(v('signup_promo_days'), 10) || 30);
   const { data: plan } = await sb.from('plans').select('id, name').eq('id', planId).maybeSingle();
-  return { planId, planName: (plan as { name?: string } | null)?.name ?? planId, days };
+  const devices = Math.max(1, parseInt(v('signup_promo_devices'), 10) || 2);
+  return { planId, planName: (plan as { name?: string } | null)?.name ?? planId, days, devices };
 }

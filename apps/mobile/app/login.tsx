@@ -68,7 +68,7 @@ export default function Login() {
           <View style={styles.promo}>
             <Text style={styles.promoTitle}>🎉 Welcome offer</Text>
             <Text style={styles.promoText}>
-              Sign up today and get <Text style={{ color: '#f5c518', fontFamily: F.bold }}>{promo.days} days of {promo.planName}</Text> free. No payment needed.
+              Sign up today and get <Text style={{ color: '#f5c518', fontFamily: F.bold }}>{promo.days} days of {promo.planName}</Text> free on up to {promo.devices} devices. No payment needed.
             </Text>
           </View>
         )}
