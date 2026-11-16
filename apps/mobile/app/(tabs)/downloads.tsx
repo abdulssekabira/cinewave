@@ -49,9 +49,9 @@ export default function Downloads() {
     setRefreshing(false);
   }
 
-  const used = list.filter((d) => d.status === 'done').reduce((n, d) => n + (d.bytes ?? 0), 0);
+  const used = list.filter((d) => d.status === 'done').reduce((n, d) => n + (Number(d.bytes) || 0), 0);
   let free = 0;
-  try { free = Paths.availableDiskSpace; } catch { /* unknown */ }
+  try { free = Number(Paths.availableDiskSpace) || 0; } catch { /* unknown */ }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -102,7 +102,8 @@ export default function Downloads() {
 }
 
 function Item({ d }: { d: Download }) {
-  const pct = d.bytes ? Math.min(100, Math.round((d.received / d.bytes) * 100)) : 0;
+  const b = Number(d.bytes) || 0;
+  const pct = b > 0 ? Math.max(0, Math.min(100, Math.round(((Number(d.received) || 0) / b) * 100))) : 0;
   const playable = isPlayable(d);
   const art = img(d.backdrop ?? d.poster);
 

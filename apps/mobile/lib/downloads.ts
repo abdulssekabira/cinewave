@@ -62,12 +62,25 @@ function emit() {
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 function persist(now = false) {
   if (saveTimer) clearTimeout(saveTimer);
-  const write = () => AsyncStorage.setItem(INDEX, JSON.stringify(items)).catch(() => {});
+  const write = () => {
+    try {
+      AsyncStorage.setItem(INDEX, JSON.stringify(items)).catch(() => {});
+    } catch (e) {
+      reportError('downloads-save', (e as Error)?.message ?? 'save failed', null);
+    }
+  };
   if (now) write();
   else saveTimer = setTimeout(write, 800);
 }
 
+const num = (v: unknown): number | null => {
+  const n = typeof v === 'bigint' ? Number(v) : typeof v === 'number' ? v : v == null ? null : Number(v);
+  return n != null && Number.isFinite(n) ? n : null;
+};
+
 function update(id: string, patch: Partial<Download>, save = true) {
+  if ('bytes' in patch) patch.bytes = num(patch.bytes);
+  if ('received' in patch) patch.received = num(patch.received) ?? 0;
   items = items.map((d) => (d.id === id ? { ...d, ...patch } : d));
   emit();
   if (save) persist();
@@ -82,7 +95,8 @@ export async function loadDownloads() {
     const list = raw ? (JSON.parse(raw) as Download[]) : [];
     items = list
       .map((d) => (d.status === 'downloading' && !tasks.has(d.id) ? { ...d, status: 'failed' as const, error: 'Download stopped' } : d))
-      .filter((d) => d.status !== 'done' || new File(d.file).exists);
+      .filter((d) => { if (d.status !== 'done') return true; try { return new File(d.file).exists; } catch { return false; } })
+      .map((d) => ({ ...d, bytes: num(d.bytes), received: num(d.received) ?? 0 }));
     lastSeen = Number((await AsyncStorage.getItem(CLOCK)) ?? 0) || 0;
     owner = (await AsyncStorage.getItem(OWNER)) || null;
   } catch {
@@ -231,7 +245,9 @@ export async function startDownload(userId: string, slug: string, part?: string 
     .downloadAsync()
     .then((f) => {
       if (!f) return;
-      update(item.id, { status: 'done', bytes: f.size ?? item.bytes, received: f.size ?? item.received });
+      let size: number | null = null;
+      try { size = num(f.size); } catch { /* unknown */ }
+      update(item.id, { status: 'done', bytes: size ?? item.bytes, received: size ?? item.received });
       persist(true);
     })
     .catch((e: Error) => {
@@ -266,6 +282,10 @@ export function retryDownload(d: Download) {
  * the ones that are no longer allowed. Does nothing when offline.
  */
 export async function verifyDownloads(userId: string) {
+  try { await verifyInner(userId); } catch (e) { reportError('downloads-verify', (e as Error)?.message ?? 'verify failed', null); }
+}
+
+async function verifyInner(userId: string) {
   await loadDownloads();
   noteClock();
   const mine = items.filter((d) => d.userId === userId);

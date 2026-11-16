@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 import { Platform } from 'react-native';
@@ -20,6 +21,7 @@ export function reportError(kind: string, message: string, detail?: string | nul
     .then(() => {}, () => {});
 }
 
+const LAST = 'gle:lastcrash';
 let installed = false;
 /** Reports crashes that happen outside a screen (keeps the normal behaviour too). */
 export function installCrashReporter() {
@@ -28,9 +30,20 @@ export function installCrashReporter() {
   const g = globalThis as unknown as { ErrorUtils?: { getGlobalHandler: () => (e: Error, fatal?: boolean) => void; setGlobalHandler: (h: (e: Error, fatal?: boolean) => void) => void } };
   const eu = g.ErrorUtils;
   if (!eu) return;
+  // A crash from the last time the app was open that couldn't be sent then.
+  AsyncStorage.getItem(LAST).then((raw) => {
+    if (!raw) return;
+    AsyncStorage.removeItem(LAST).catch(() => {});
+    try { const c = JSON.parse(raw) as { m: string; d: string | null }; reportError('crash-saved', c.m, c.d); } catch { /* ignore */ }
+  }).catch(() => {});
   const prev = eu.getGlobalHandler();
   eu.setGlobalHandler((e, fatal) => {
-    try { reportError(fatal ? 'crash' : 'error', e?.message ?? String(e), e?.stack ?? null); } catch { /* ignore */ }
-    prev(e, fatal);
+    const m = e?.message ?? String(e);
+    const d = e?.stack ?? null;
+    try { reportError(fatal ? 'crash' : 'error', m, d); } catch { /* ignore */ }
+    if (!fatal) { prev(e, fatal); return; }
+    // Save it, and give the report a moment to reach us before the app closes.
+    AsyncStorage.setItem(LAST, JSON.stringify({ m: m.slice(0, 2000), d: d ? d.slice(0, 4000) : null })).catch(() => {});
+    setTimeout(() => prev(e, fatal), 1500);
   });
 }
