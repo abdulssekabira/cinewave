@@ -108,6 +108,7 @@ function Item({ d }: { d: Download }) {
   const art = img(d.backdrop ?? d.poster);
 
   function open() {
+    if (d.status === 'failed') return void retryDownload(d).then((m) => m && Alert.alert('Download', m));
     if (d.status === 'done' && playable) return router.push({ pathname: '/offline/[id]', params: { id: d.id } });
     if (d.status === 'done') {
       Alert.alert('Renew this download', 'Connect to the internet, then pull down on this page to renew it.');
@@ -118,7 +119,7 @@ function Item({ d }: { d: Download }) {
     const del = { text: d.status === 'downloading' ? 'Cancel download' : 'Delete download', style: 'destructive' as const, onPress: () => removeDownload(d.id) };
     const opts: { text: string; style?: 'destructive' | 'cancel'; onPress?: () => void }[] = [];
     if (d.status === 'failed') {
-      opts.push({ text: 'Retry', onPress: () => retryDownload(d).then((m) => m && Alert.alert('Download', m)) });
+      opts.push({ text: d.received > 0 ? 'Resume' : 'Retry', onPress: () => retryDownload(d).then((m) => m && Alert.alert('Download', m)) });
     }
     opts.push({ text: 'View details', onPress: () => router.push({ pathname: '/title/[slug]', params: { slug: d.slug } }) });
     opts.push(del, { text: 'Close', style: 'cancel' });
@@ -132,7 +133,7 @@ function Item({ d }: { d: Download }) {
         {d.status === 'done' && (
           <View style={[styles.play, !playable && { opacity: 0.45 }]}><Ionicons name="play" size={14} color="#fff" /></View>
         )}
-        {d.status === 'downloading' && (
+        {(d.status === 'downloading' || (d.status === 'failed' && pct > 0)) && (
           <View style={styles.bar}><View style={{ width: `${pct}%`, height: '100%', backgroundColor: colors.accent }} /></View>
         )}
       </View>
@@ -140,9 +141,9 @@ function Item({ d }: { d: Download }) {
         <Text style={styles.name} numberOfLines={1}>{d.title}</Text>
         {d.episodeLabel ? <Text style={styles.sub} numberOfLines={1}>{d.episodeLabel}{d.episodeName ? ` · ${d.episodeName}` : ''}</Text> : null}
         {d.status === 'downloading' ? (
-          <Text style={styles.meta}>Downloading {pct}%{d.bytes ? ` of ${sizeLabel(d.bytes)}` : ''} · keep the app open</Text>
+          <Text style={styles.meta}>Downloading {pct}%{d.bytes ? ` of ${sizeLabel(d.bytes)}` : ''}</Text>
         ) : d.status === 'failed' ? (
-          <Text style={[styles.meta, { color: colors.danger }]}>{d.error ?? 'Download stopped'} · hold to retry</Text>
+          <Text style={[styles.meta, { color: colors.danger }]}>{d.error ?? 'Download stopped · tap to try again'}</Text>
         ) : (
           <Text style={[styles.meta, !playable && { color: colors.gold }]}>
             {sizeLabel(d.bytes)}{d.bytes ? ' · ' : ''}{expiryLabel(d)}

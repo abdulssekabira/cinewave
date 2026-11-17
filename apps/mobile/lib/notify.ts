@@ -50,7 +50,7 @@ export async function notifyDownloadDone(title: string, detail?: string | null) 
 export async function notifyDownloadFailed(title: string) {
   if (!(await prepareNotifications())) return;
   await Notifications.scheduleNotificationAsync({
-    content: { title: 'Download stopped', body: `${title} didn’t finish. Open Downloads and tap Retry.`, data: { url: '/downloads' } },
+    content: { title: 'Download stopped', body: `${title} paused. Open Downloads to continue from where it stopped.`, data: { url: '/downloads' } },
     trigger: Platform.OS === 'android' ? { channelId: CHANNEL } : null,
   }).catch(() => {});
 }

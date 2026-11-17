@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     let bytes: number | null = row.bytes ? Number(row.bytes) : null;
     if (row.provider === 'r2') {
       if (!r2Configured()) return json({ status: 'refused', reason: 'no_video' });
-      url = await signedGet(row.ref, 3 * 3600);
+      url = await signedGet(row.ref, 12 * 3600);
     } else {
       if (!muxConfigured() || !row.asset_id) return json({ status: 'refused', reason: 'no_video' });
       const r = await downloadRendition(row.asset_id);

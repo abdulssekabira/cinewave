@@ -1,0 +1,83 @@
+diff --git a/node_modules/@kesha-antonov/react-native-background-downloader/android/src/main/java/com/eko/RNBackgroundDownloaderModuleImpl.kt b/node_modules/@kesha-antonov/react-native-background-downloader/android/src/main/java/com/eko/RNBackgroundDownloaderModuleImpl.kt
+index 432327a..7dbc982 100644
+--- a/node_modules/@kesha-antonov/react-native-background-downloader/android/src/main/java/com/eko/RNBackgroundDownloaderModuleImpl.kt
++++ b/node_modules/@kesha-antonov/react-native-background-downloader/android/src/main/java/com/eko/RNBackgroundDownloaderModuleImpl.kt
+@@ -753,7 +753,12 @@ class RNBackgroundDownloaderModuleImpl(private val reactContext: ReactApplicatio
+          externalFilesDir.absolutePath.startsWith("/mnt/"))
+ 
+     // Save headers for potential pause/resume functionality
+-    val headersMap = HeaderUtils.toMap(headers)
++    // GLE: "X-Gle-Resume" asks to continue from the partial file already at the
++    // destination (after a failed or interrupted download) instead of from zero.
++    // The marker is never sent to the server.
++    val gleResume = HeaderUtils.toMap(headers).keys.any { it.equals("X-Gle-Resume", ignoreCase = true) }
++    val headersMap = HeaderUtils.toMap(headers).filterKeys { !it.equals("X-Gle-Resume", ignoreCase = true) }
++    val gleResumeBytes = if (gleResume) File(destination).let { if (it.exists()) it.length() else 0L } else 0L
+     val metadataValue = metadata ?: "{}"
+ 
+     // Helper function to start download with DownloadManager and track state
+@@ -786,7 +791,7 @@ class RNBackgroundDownloaderModuleImpl(private val reactContext: ReactApplicatio
+         url = url,
+         destination = destination,
+         headers = headersMap,
+-        bytesDownloaded = 0L,
++        bytesDownloaded = gleResumeBytes,
+         bytesTotal = -1L,
+         metadata = metadataValue,
+         isAllowedOverMetered = isAllowedOverMetered
+@@ -822,6 +827,13 @@ class RNBackgroundDownloaderModuleImpl(private val reactContext: ReactApplicatio
+ 
+     // On Android 16+ (API 36), DownloadManager has strict path restrictions and throws
+     // SecurityException for app-specific external storage paths. Use ResumableDownloader instead.
++    // GLE: a continued download needs the Range-capable downloader (DownloadManager restarts from zero)
++    if (gleResumeBytes > 0) {
++      logD(NAME, "Continuing $id from $gleResumeBytes bytes")
++      startWithResumableDownloader()
++      return
++    }
++
+     if (Build.VERSION.SDK_INT >= 36) {
+       logD(NAME, "Android 16+ detected: Using ResumableDownloader to avoid DownloadManager path restrictions")
+       startWithResumableDownloader()
+diff --git a/node_modules/@kesha-antonov/react-native-background-downloader/android/src/main/java/com/eko/ResumableDownloader.kt b/node_modules/@kesha-antonov/react-native-background-downloader/android/src/main/java/com/eko/ResumableDownloader.kt
+index f4f7b30..d1cdec8 100644
+--- a/node_modules/@kesha-antonov/react-native-background-downloader/android/src/main/java/com/eko/ResumableDownloader.kt
++++ b/node_modules/@kesha-antonov/react-native-background-downloader/android/src/main/java/com/eko/ResumableDownloader.kt
+@@ -24,6 +24,7 @@ class ResumableDownloader {
+ 
+   companion object {
+     private const val TAG = "ResumableDownloader"
++    private const val GLE_MAX_NETWORK_RETRIES = 480
+ 
+     @Volatile
+     private var maxConcurrentTransfers = DownloadConstants.DEFAULT_MAX_PARALLEL_DOWNLOADS
+@@ -404,13 +405,15 @@ class ResumableDownloader {
+       // A redirect replaces the state
+       val current = activeDownloads[state.id] ?: state
+       val bytesBefore = current.bytesDownloaded.get()
+-      if (retries >= networkRetryDelaysMs.size) {
++      // GLE: keep waiting for the connection (up to about 2 hours without progress)
++      // instead of failing after half a minute; the transfer continues from the partial file.
++      if (retries >= GLE_MAX_NETWORK_RETRIES) {
+         RNBackgroundDownloaderModuleImpl.logE(TAG, "Download error after $retries retries: ${result.message}")
+         listener.onError(result.id, result.message, result.errorCode)
+         return
+       }
+       RNBackgroundDownloaderModuleImpl.logW(TAG, "Network failure for ${state.id} (${result.message}), retry ${retries + 1} at $bytesBefore bytes")
+-      if (!waitBeforeRetry(current, expectedSessionId, networkRetryDelaysMs[retries])) {
++      if (!waitBeforeRetry(current, expectedSessionId, networkRetryDelaysMs[minOf(retries, networkRetryDelaysMs.size - 1)])) {
+         RNBackgroundDownloaderModuleImpl.logD(TAG, "Retry abandoned, download paused or cancelled: ${state.id}")
+         return
+       }
+@@ -466,7 +469,10 @@ class ResumableDownloader {
+       e is java.net.UnknownHostException ||
+       e is java.io.EOFException ||
+       // "unexpected end of stream" when the connection drops mid-body
+-      e is java.net.ProtocolException
++      e is java.net.ProtocolException ||
++      // GLE: a stalled connection or a TLS drop on a weak network
++      e is java.net.SocketTimeoutException ||
++      e is javax.net.ssl.SSLException
+ 
+   /**
+    * Execute the download and return a DownloadResult.

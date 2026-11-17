@@ -83,6 +83,13 @@ const num = (v: unknown): number | null => {
   return n != null && Number.isFinite(n) ? n : null;
 };
 
+const pctOf = (d: Pick<Download, 'bytes' | 'received'>) =>
+  d.bytes && d.received ? Math.min(99, Math.floor((d.received / d.bytes) * 100)) : 0;
+
+/** What a cut-off download says: it keeps what it already has. */
+const pausedText = (d: Pick<Download, 'bytes' | 'received'>) =>
+  pctOf(d) > 0 ? `Paused at ${pctOf(d)}% · tap to continue` : 'Download stopped · tap to try again';
+
 function update(id: string, patch: Partial<Download>, save = true) {
   if ('bytes' in patch) patch.bytes = num(patch.bytes);
   if ('received' in patch) patch.received = num(patch.received) ?? 0;
@@ -125,7 +132,10 @@ function attach(task: DownloadTask, item: Pick<Download, 'id' | 'title' | 'episo
       completeHandler(item.id)?.catch(() => {});
       if (!items.some((x) => x.id === item.id)) return;
       reportError('download', `${error ?? 'download failed'} (${errorCode})`, item.title);
-      update(item.id, { status: 'failed', error: 'Download stopped. Check your connection and tap Retry.' });
+      // The part already downloaded stays on the phone; Resume continues from it.
+      const cur = items.find((x) => x.id === item.id)!;
+      const got = partialSize(cur.file);
+      update(item.id, { status: 'failed', received: got || cur.received, error: pausedText({ bytes: cur.bytes, received: got || cur.received }) });
       persist(true);
       notifyDownloadFailed(item.title).catch(() => {});
     });
@@ -146,6 +156,8 @@ async function reattach() {
     if (t.state === 'FAILED' || t.state === 'STOPPED') continue;
     update(d.id, { status: 'downloading', error: undefined, received: num(t.bytesDownloaded) ?? d.received }, false);
     attach(t, d);
+    // Cut off when the app or phone was closed: carries on from where it stopped.
+    if (t.state === 'PAUSED') t.resume().catch(() => {});
   }
 }
 
@@ -159,7 +171,11 @@ export async function loadDownloads() {
     items = list.map((d) => ({ ...d, bytes: num(d.bytes), received: num(d.received) ?? 0 }));
     await reattach();
     items = items
-      .map((d) => (d.status === 'downloading' && !tasks.has(d.id) ? { ...d, status: 'failed' as const, error: 'Download stopped' } : d))
+      .map((d) => {
+        if (d.status !== 'downloading' || tasks.has(d.id)) return d;
+        const received = partialSize(d.file) || d.received;
+        return { ...d, status: 'failed' as const, received, error: pausedText({ bytes: d.bytes, received }) };
+      })
       .filter((d) => { if (d.status !== 'done') return true; try { return new File(d.file).exists; } catch { return false; } })
       .map((d) => ({ ...d, bytes: num(d.bytes), received: num(d.received) ?? 0 }));
     lastSeen = Number((await AsyncStorage.getItem(CLOCK)) ?? 0) || 0;
@@ -260,7 +276,7 @@ export async function startDownload(userId: string, slug: string, part?: string 
   }
 
   const existing = items.find((d) => d.id === body.download_id);
-  if (existing?.status === 'downloading') return 'This is already downloading.';
+  if (existing?.status === 'downloading' && tasks.has(existing.id)) return 'This is already downloading.';
   if (existing?.status === 'done' && new File(existing.file).exists) {
     update(existing.id, { expiresAt: Date.parse(body.expires_at) });
     return 'Already downloaded. Find it in Downloads.';
@@ -270,8 +286,22 @@ export async function startDownload(userId: string, slug: string, part?: string 
   if (!d.exists) d.create({ intermediates: true, idempotent: true });
   // Keep the real file type (most films are .mkv); a wrong ending can confuse the player.
   const ext = (body.url.split('?')[0].match(/\.(mp4|m4v|mkv|webm|mov)$/i)?.[1] ?? 'mp4').toLowerCase();
-  const file = new File(d, `${body.download_id}.${ext}`);
-  if (file.exists) file.delete();
+  const file = existing && existing.status !== 'done' && new File(existing.file).exists
+    ? new File(existing.file)
+    : new File(d, `${body.download_id}.${ext}`);
+  // Continue from the part already downloaded (after a lost connection, the
+  // app or phone closing, or an expired link) instead of starting at zero.
+  let have = partialSize(file.uri);
+  const total = num(body.bytes) ?? existing?.bytes ?? null;
+  if (have > 0 && total && have >= total) {
+    if (existing) { // it had actually finished
+      update(existing.id, { status: 'done', error: undefined, bytes: total, received: total, expiresAt: Date.parse(body.expires_at) });
+      persist(true);
+      return null;
+    }
+    file.delete();
+    have = 0;
+  }
 
   const item: Download = {
     id: body.download_id,
@@ -286,9 +316,9 @@ export async function startDownload(userId: string, slug: string, part?: string 
     episodeLabel: body.episode?.label ?? null,
     episodeName: body.episode?.name ?? null,
     file: file.uri,
-    bytes: body.bytes,
-    received: 0,
-    createdAt: Date.now(),
+    bytes: total,
+    received: have,
+    createdAt: existing?.createdAt ?? Date.now(),
     expiresAt: Date.parse(body.expires_at),
     status: 'downloading',
   };
@@ -303,6 +333,8 @@ export async function startDownload(userId: string, slug: string, part?: string 
     destination: file.uri.replace(/^file:\/\//, ''),
     notificationTitle: `${item.title}${item.episodeLabel ? ` · ${item.episodeLabel}` : ''}`,
     metadata: { title: item.title },
+    // Our marker (never sent to the server): pick up from the partial file.
+    ...(have > 0 ? { headers: { 'X-Gle-Resume': '1' } } : {}),
   });
   attach(task, item);
   task.start();
@@ -321,9 +353,24 @@ export async function removeDownload(id: string) {
   supabase.rpc('release_download', { d_id: id }).then(() => {}, () => {});
 }
 
-/** Retries a failed download (gets a fresh link). */
+/** Resumes a stopped download from where it stopped (gets a fresh link). */
 export function retryDownload(d: Download) {
   return startDownload(d.userId, d.slug, d.episodeId);
+}
+
+/** Size of the part already on the phone (0 if none). */
+function partialSize(uri: string) {
+  try { const f = new File(uri); return f.exists ? Number(f.size) || 0 : 0; } catch { return 0; }
+}
+
+let autoResumed = false;
+/** Once per app start, when online: continue downloads that were cut off. */
+async function resumeInterrupted(userId: string) {
+  if (autoResumed) return;
+  autoResumed = true;
+  for (const d of items.filter((x) => x.userId === userId && x.status === 'failed' && x.received > 0)) {
+    await startDownload(d.userId, d.slug, d.episodeId).catch(() => null);
+  }
 }
 
 /**
@@ -353,6 +400,7 @@ async function verifyInner(userId: string) {
       else if (!r.ok) await removeDownload(r.download_id);
     }
     persist(true);
+    await resumeInterrupted(userId);
   } catch {
     /* offline */
   }
