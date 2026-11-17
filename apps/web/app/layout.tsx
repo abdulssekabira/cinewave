@@ -10,6 +10,8 @@ import './globals.css';
 export const metadata: Metadata = {
   title: { default: 'GLE Movies', template: '%s · GLE Movies' },
   description: 'Stream films in Uganda and beyond. Watch free with ads, or subscribe with mobile money or card.',
+  // Google Search Console ownership (needed for the Google Play developer account).
+  verification: { google: 'PduBbvCVygFNB9M1VnUJzKfaIB7BO-PSJzF_QKddahY' },
 };
 
 export const viewport: Viewport = {
