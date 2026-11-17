@@ -1,5 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Directory, File, Paths, type DownloadTask } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
+import {
+  completeHandler, createDownloadTask, getExistingDownloadTasks, setConfig,
+  type DownloadTask,
+} from '@kesha-antonov/react-native-background-downloader';
+import { notifyDownloadDone, notifyDownloadFailed, prepareNotifications } from './notify';
 import { useSyncExternalStore } from 'react';
 import { getProfile } from '@cinewave/shared';
 import { authHeaders, SITE, UA } from './api';
@@ -86,6 +91,64 @@ function update(id: string, patch: Partial<Download>, save = true) {
   if (save) persist();
 }
 
+// Downloads keep going when the app is in the background or closed (Android
+// shows its own progress notification while they run).
+setConfig({
+  progressInterval: 1000,
+  showNotificationsEnabled: true,
+  showCompletionNotification: false, // ours opens the app, not the file
+  notificationsGrouping: { enabled: false, texts: { downloadTitle: 'Downloading film' } },
+});
+
+/** Wires a running background download to the list (progress, done, failed). */
+function attach(task: DownloadTask, item: Pick<Download, 'id' | 'title' | 'episodeLabel' | 'bytes'>) {
+  tasks.set(item.id, task);
+  let lastTick = 0;
+  task
+    .progress(({ bytesDownloaded, bytesTotal }) => {
+      const now = Date.now();
+      if (now - lastTick < 700) return;
+      lastTick = now;
+      update(item.id, { received: bytesDownloaded, bytes: bytesTotal > 0 ? bytesTotal : item.bytes }, false);
+    })
+    .done(({ bytesDownloaded, bytesTotal }) => {
+      tasks.delete(item.id);
+      completeHandler(item.id)?.catch(() => {});
+      if (!items.some((x) => x.id === item.id)) return; // deleted meanwhile
+      const size = num(bytesTotal) || num(bytesDownloaded);
+      update(item.id, { status: 'done', bytes: size ?? item.bytes, received: size ?? 0 });
+      persist(true);
+      notifyDownloadDone(item.title, item.episodeLabel).catch(() => {});
+    })
+    .error(({ error, errorCode }) => {
+      tasks.delete(item.id);
+      completeHandler(item.id)?.catch(() => {});
+      if (!items.some((x) => x.id === item.id)) return;
+      reportError('download', `${error ?? 'download failed'} (${errorCode})`, item.title);
+      update(item.id, { status: 'failed', error: 'Download stopped. Check your connection and tap Retry.' });
+      persist(true);
+      notifyDownloadFailed(item.title).catch(() => {});
+    });
+}
+
+/** After the app was closed: reconnect to downloads that kept running. */
+async function reattach() {
+  let running: DownloadTask[] = [];
+  try { running = await getExistingDownloadTasks(); } catch { return; }
+  for (const t of running) {
+    const d = items.find((x) => x.id === t.id);
+    if (!d) { t.stop().catch(() => {}); continue; }
+    if (t.state === 'DONE') {
+      update(d.id, { status: 'done', bytes: num(t.bytesTotal) ?? d.bytes, received: num(t.bytesTotal) ?? d.received });
+      completeHandler(d.id)?.catch(() => {});
+      continue;
+    }
+    if (t.state === 'FAILED' || t.state === 'STOPPED') continue;
+    update(d.id, { status: 'downloading', error: undefined, received: num(t.bytesDownloaded) ?? d.received }, false);
+    attach(t, d);
+  }
+}
+
 /** Loads the list once. Downloads cut off by the app closing are marked failed. */
 export async function loadDownloads() {
   if (loaded) return;
@@ -93,7 +156,9 @@ export async function loadDownloads() {
   try {
     const raw = await AsyncStorage.getItem(INDEX);
     const list = raw ? (JSON.parse(raw) as Download[]) : [];
-    items = list
+    items = list.map((d) => ({ ...d, bytes: num(d.bytes), received: num(d.received) ?? 0 }));
+    await reattach();
+    items = items
       .map((d) => (d.status === 'downloading' && !tasks.has(d.id) ? { ...d, status: 'failed' as const, error: 'Download stopped' } : d))
       .filter((d) => { if (d.status !== 'done') return true; try { return new File(d.file).exists; } catch { return false; } })
       .map((d) => ({ ...d, bytes: num(d.bytes), received: num(d.received) ?? 0 }));
@@ -231,39 +296,23 @@ export async function startDownload(userId: string, slug: string, part?: string 
   emit();
   persist(true);
 
-  let lastTick = 0;
-  const task = File.createDownloadTask(body.url, file, {
-    onProgress: ({ bytesWritten, totalBytes }) => {
-      const now = Date.now();
-      if (now - lastTick < 700) return;
-      lastTick = now;
-      update(item.id, { received: bytesWritten, bytes: totalBytes > 0 ? totalBytes : item.bytes }, false);
-    },
+  prepareNotifications().catch(() => {});
+  const task = createDownloadTask({
+    id: item.id,
+    url: body.url,
+    destination: file.uri.replace(/^file:\/\//, ''),
+    notificationTitle: `${item.title}${item.episodeLabel ? ` · ${item.episodeLabel}` : ''}`,
+    metadata: { title: item.title },
   });
-  tasks.set(item.id, task);
-  task
-    .downloadAsync()
-    .then((f) => {
-      if (!f) return;
-      let size: number | null = null;
-      try { size = num(f.size); } catch { /* unknown */ }
-      update(item.id, { status: 'done', bytes: size ?? item.bytes, received: size ?? item.received });
-      persist(true);
-    })
-    .catch((e: Error) => {
-      if (!items.some((x) => x.id === item.id)) return; // deleted meanwhile
-      reportError('download', e?.message ?? 'download failed', item.title);
-      update(item.id, { status: 'failed', error: 'Download stopped. Check your connection and tap Retry.' });
-      persist(true);
-    })
-    .finally(() => tasks.delete(item.id));
+  attach(task, item);
+  task.start();
   return null;
 }
 
 /** Deletes the file and gives the licence back. */
 export async function removeDownload(id: string) {
   const t = tasks.get(id);
-  if (t) { try { t.cancel(); } catch { /* already finished */ } tasks.delete(id); }
+  if (t) { t.stop().catch(() => {}); tasks.delete(id); completeHandler(id)?.catch(() => {}); }
   const d = items.find((x) => x.id === id);
   if (d) { try { const f = new File(d.file); if (f.exists) f.delete(); } catch { /* gone */ } }
   items = items.filter((x) => x.id !== id);
@@ -312,7 +361,7 @@ async function verifyInner(userId: string) {
 /** Signing out removes every download from the phone. */
 export async function removeAllDownloads() {
   await loadDownloads();
-  for (const [, t] of tasks) { try { t.cancel(); } catch { /* ignore */ } }
+  for (const [id, t] of tasks) { t.stop().catch(() => {}); completeHandler(id)?.catch(() => {}); }
   tasks.clear();
   try { const d = dir(); if (d.exists) d.delete(); } catch { /* ignore */ }
   items = [];

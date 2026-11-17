@@ -15,6 +15,7 @@ import { AuthProvider } from '@/lib/auth';
 import { colors, F } from '@/lib/theme';
 import { HelpLine } from '@/components/HelpLine';
 import { installCrashReporter, reportError } from '@/lib/report';
+import * as Notifications from 'expo-notifications';
 
 installCrashReporter();
 
@@ -46,6 +47,16 @@ export default function RootLayout() {
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
   });
+  // Tapping a "Download complete" notification opens Downloads.
+  useEffect(() => {
+    const go = (r: Notifications.NotificationResponse | null) => {
+      const url = r?.notification.request.content.data?.url;
+      if (typeof url === 'string' && url.startsWith('/')) { try { router.push(url as never); } catch { /* not ready */ } }
+    };
+    Notifications.getLastNotificationResponseAsync().then(go).catch(() => {});
+    const sub = Notifications.addNotificationResponseReceivedListener(go);
+    return () => sub.remove();
+  }, []);
   if (!loaded) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
 
   return (
