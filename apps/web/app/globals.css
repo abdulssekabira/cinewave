@@ -485,6 +485,7 @@ a.chip:hover { background: rgba(255, 255, 255, .16); }
 }
 .a-badge.ok { color: var(--ok); background: rgba(70, 211, 154, .12); }
 .a-badge.warn { color: #ffb648; background: rgba(255, 182, 72, .12); }
+.a-badge.bad { color: var(--danger); background: rgba(255, 90, 95, .12); }
 .a-badge.muted { color: var(--text-muted); background: rgba(255, 255, 255, .07); text-transform: capitalize; }
 
 .a-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }

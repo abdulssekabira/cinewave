@@ -1,0 +1,4 @@
+-- Admin → Users shows each user's signed-in devices and their device limit.
+-- Applied via the Supabase connector as migration "admin_users_devices":
+-- adds public.user_device_limit(uid) and recreates public.admin_list_users(search)
+-- with extra columns devices, device_limit, last_active (sessions active in 30 days).
