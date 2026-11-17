@@ -25,6 +25,7 @@ import { Art, Rating } from '@/components/Poster';
 import { Button, Chip, Empty, ErrorState, IconCircle, Loading, Row } from '@/components/ui';
 import { Reviews } from '@/components/Reviews';
 import { useAuth } from '@/lib/auth';
+import { PLAY_STORE } from '@/lib/store';
 import { isPlayable, startDownload, useDownloads, type Download } from '@/lib/downloads';
 import { supabase } from '@/lib/supabase';
 import { colors, F, img, radius } from '@/lib/theme';
@@ -102,7 +103,7 @@ export default function TitleScreen() {
     if (!userId) return router.push('/login');
     if (!ent.can_download) {
       if (ent.reason === 'device_limit') return router.push('/devices');
-      return Alert.alert('Premium feature', 'Offline downloads are included with Premium. Visit glemovies.com to upgrade.');
+      return Alert.alert('Premium feature', PLAY_STORE ? 'Offline downloads are included with Premium.' : 'Offline downloads are included with Premium. Visit glemovies.com to upgrade.');
     }
     const have = dlFor(episodeId);
     if (have?.status === 'done' && isPlayable(have)) return router.push({ pathname: '/offline/[id]', params: { id: have.id } });
@@ -125,7 +126,10 @@ export default function TitleScreen() {
       return openPart(partId ?? currentEp?.id);
     }
     if (ent.reason === 'sign_in_required') return router.push('/login');
-    if (ent.reason === 'upgrade_required') return router.push('/profile');
+    if (ent.reason === 'upgrade_required') {
+      if (PLAY_STORE) return Alert.alert(`${PLAN_LABEL[ent.required_plan ?? 'standard']} plan`, `This title is included in the ${PLAN_LABEL[ent.required_plan ?? 'standard']} plan.`);
+      return router.push('/profile');
+    }
     if (ent.reason === 'device_limit') return router.push('/devices');
   }
 
@@ -138,7 +142,7 @@ export default function TitleScreen() {
       : ent.reason === 'sign_in_required'
       ? 'Sign in to watch'
       : ent.reason === 'upgrade_required'
-        ? `Get ${PLAN_LABEL[ent.required_plan ?? 'standard']}`
+        ? (PLAY_STORE ? `${PLAN_LABEL[ent.required_plan ?? 'standard']} plan` : `Get ${PLAN_LABEL[ent.required_plan ?? 'standard']}`)
         : 'Unavailable';
 
   return (

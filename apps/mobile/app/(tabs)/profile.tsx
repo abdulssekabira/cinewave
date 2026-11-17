@@ -6,6 +6,8 @@ import { formatPrice, getActiveSubscription, getPlans, getProfile, PLAN_LABEL } 
 import { Button, ErrorState, Loading, ScreenTitle, type IconName } from '@/components/ui';
 import { HelpLine } from '@/components/HelpLine';
 import { useAuth } from '@/lib/auth';
+import { PLAY_STORE } from '@/lib/store';
+import { removeAllDownloads } from '@/lib/downloads';
 import { supabase } from '@/lib/supabase';
 import { colors, F, radius } from '@/lib/theme';
 import { useAsync } from '@/lib/useAsync';
@@ -39,6 +41,36 @@ export default function Profile() {
 
   const current = data.sub?.plan_id ?? 'free';
 
+  function confirmDelete() {
+    Alert.alert(
+      'Delete your account?',
+      'This permanently deletes your GLE Movies account and everything linked to it: watchlist, progress, reviews, comments, downloads and any plan time left. It can’t be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete forever',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert('Are you sure?', 'Your account will be deleted now.', [
+              { text: 'Keep my account', style: 'cancel' },
+              {
+                text: 'Yes, delete it',
+                style: 'destructive',
+                onPress: async () => {
+                  const { data: err, error: e } = await supabase.rpc('delete_my_account');
+                  if (e || err) return Alert.alert('Couldn’t delete', (err as string | null) ?? 'Check your connection and try again.');
+                  await removeAllDownloads().catch(() => {});
+                  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+                  Alert.alert('Account deleted', 'Your account and data have been removed.');
+                  router.replace('/');
+                },
+              },
+            ]),
+        },
+      ],
+    );
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScreenTitle title="Profile" />
@@ -67,8 +99,8 @@ export default function Profile() {
           </View>
         )}
 
-        <Text style={styles.h2}>Plans</Text>
-        {data.plans.map((p) => (
+        {!PLAY_STORE && <Text style={styles.h2}>Plans</Text>}
+        {!PLAY_STORE && data.plans.map((p) => (
           <View key={p.id} style={[styles.plan, current === p.id && { borderColor: colors.accent }]}>
             <View style={{ flex: 1 }}>
               <Text style={styles.planName}>{p.name}</Text>
@@ -87,11 +119,13 @@ export default function Profile() {
           </View>
         ))}
         <Text style={styles.h2}>Help & contact</Text>
-        <HelpLine title="Questions, payments or trouble signing in? Talk to us." style={{ marginTop: 4, alignItems: 'flex-start' }} />
+        <HelpLine title={PLAY_STORE ? 'Questions or trouble signing in? Talk to us.' : 'Questions, payments or trouble signing in? Talk to us.'} style={{ marginTop: 4, alignItems: 'flex-start' }} />
 
-        <Text style={styles.note}>
-          To subscribe or add more time, visit glemovies.com in your browser and pay with MTN MoMo, Airtel Money or card. Your plan then works here straight away.
-        </Text>
+        {!PLAY_STORE && (
+          <Text style={styles.note}>
+            To subscribe or add more time, visit glemovies.com in your browser and pay with MTN MoMo, Airtel Money or card. Your plan then works here straight away.
+          </Text>
+        )}
 
         {session && (
           <View style={styles.menu}>
@@ -116,6 +150,7 @@ export default function Profile() {
                 ])
               }
             />
+            <MenuItem icon="trash-outline" label="Delete account" onPress={confirmDelete} />
           </View>
         )}
       </ScrollView>

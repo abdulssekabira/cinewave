@@ -18,4 +18,12 @@ jobs:
       channel: preview
       platform: android
       message: Automatic update from GitHub
-# Test trigger 2026-11-14
+  # The Google Play version (production builds) gets the same updates.
+  update_production:
+    name: Update Play Store app
+    type: update
+    environment: production
+    params:
+      channel: production
+      platform: android
+      message: Automatic update from GitHub

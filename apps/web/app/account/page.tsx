@@ -157,6 +157,7 @@ export default async function AccountPage() {
           <form action={signOut}>
             <button type="submit" className="btn btn-gray btn-small">Sign out</button>
           </form>
+          <Link href="/delete-account" className="btn btn-gray btn-small">Delete account</Link>
         </div>
         <p style={{ color: 'var(--text-faint)', fontSize: 13, marginBottom: 0 }}>
           Account deletion requests will be available here before launch.
