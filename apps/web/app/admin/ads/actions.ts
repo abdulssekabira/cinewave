@@ -1,13 +1,13 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireStaff } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 
 export type AdState = { error?: string; message?: string };
 const t = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
 
 export async function saveAd(_: AdState, form: FormData): Promise<AdState> {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return { error: 'Only the owner can manage adverts.' };
   const id = t(form, 'id');
   const link = t(form, 'link_url');
@@ -31,21 +31,21 @@ export async function saveAd(_: AdState, form: FormData): Promise<AdState> {
 }
 
 export async function setAdActive(id: string, on: boolean) {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return;
   await sb.from('ads').update({ active: on }).eq('id', id);
   revalidatePath('/admin/ads');
 }
 
 export async function deleteAd(id: string) {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return;
   await sb.from('ads').delete().eq('id', id);
   revalidatePath('/admin/ads');
 }
 
 export async function saveAdTiming(_: AdState, form: FormData): Promise<AdState> {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return { error: 'Only the owner can change this.' };
   const n = (k: string, min: number, max: number) => {
     const v = Number(t(form, k));

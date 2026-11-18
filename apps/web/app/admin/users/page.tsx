@@ -1,5 +1,5 @@
 import { PLAN_LABEL, type PlanId } from '@cinewave/shared';
-import { fmtDate, requireStaff } from '@/lib/admin';
+import { fmtDate, requireAdmin } from '@/lib/admin';
 import { endComplimentary, grantComplimentary, setUploader } from './actions';
 
 type UserRow = {
@@ -20,7 +20,7 @@ type UserRow = {
 type Props = { searchParams: Promise<{ q?: string; sort?: string }> };
 
 export default async function Users({ searchParams }: Props) {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) {
     return (
       <>

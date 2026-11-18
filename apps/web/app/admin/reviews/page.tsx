@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { timeAgo } from '@cinewave/shared';
-import { requireStaff } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import { deleteReview, setReviewHidden } from './actions';
 
 export const metadata: Metadata = { title: 'Reviews' };
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Reviews' };
 type Row = { id: string; title: string; slug: string; author: string; stars: number; body: string | null; hidden: boolean; reports: number; created_at: string };
 
 export default async function ReviewsAdmin() {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) notFound();
   const { data } = await sb.rpc('admin_reviews', { lim: 300 });
   const rows = (data ?? []) as Row[];

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { clockLabel, timeAgo } from '@cinewave/shared';
-import { requireStaff } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import { deleteComment, setCommentHidden } from './actions';
 
 export const metadata: Metadata = { title: 'Scene comments' };
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Scene comments' };
 type Row = { id: string; title: string; slug: string; episode: string | null; parent_id: string | null; author: string; at_seconds: number; body: string; hidden: boolean; reports: number; created_at: string };
 
 export default async function CommentsAdmin() {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) notFound();
   const { data } = await sb.rpc('admin_timed_comments', { lim: 300 });
   const rows = (data ?? []) as Row[];

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireStaff, type AdminTitle } from '@/lib/admin';
+import { requireAdmin, type AdminTitle } from '@/lib/admin';
 import { addToRow, createRow, deleteRow, moveInRow, moveRow, removeFromRow, setRowActive } from './actions';
 
 type Row = {
@@ -11,7 +11,7 @@ type Row = {
 };
 
 export default async function Rows() {
-  const { sb } = await requireStaff();
+  const { sb } = await requireAdmin();
   const [{ data: rowData }, { data: titleData }] = await Promise.all([
     sb.from('collections').select('id, name, active, sort_order, collection_items(title_id, position)').order('sort_order'),
     sb.from('titles').select('id, title, status').neq('status', 'archived').order('title'),

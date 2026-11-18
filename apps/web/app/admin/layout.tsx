@@ -11,7 +11,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="admin">
       <aside className="admin-side">
         <div className="admin-brand">
-          Admin
+          {isAdmin ? 'Admin' : 'Upload films'}
           <span>{isAdmin ? 'Administrator' : 'Uploader'} · {user.email}</span>
         </div>
         <AdminNav isAdmin={isAdmin} />

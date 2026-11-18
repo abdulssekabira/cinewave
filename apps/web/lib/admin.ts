@@ -73,6 +73,13 @@ export async function requireStaff() {
   return { sb, user, isAdmin: Boolean(admin) };
 }
 
+/** Administrators only: uploaders are sent to Films (the only page they use). */
+export async function requireAdmin() {
+  const ctx = await requireStaff();
+  if (!ctx.isAdmin) redirect('/admin/titles');
+  return ctx;
+}
+
 export const TZ = 'Africa/Kampala';
 
 export function fmtDate(iso: string | null | undefined) {

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Plan } from '@cinewave/shared';
-import { fmtDateTime, requireStaff } from '@/lib/admin';
+import { fmtDateTime, requireAdmin } from '@/lib/admin';
 import { ensureServerSecret } from '@/lib/server-secret';
 import { pesapalSandbox } from '@/lib/pesapal';
 import { formatPrice } from '@cinewave/shared';
@@ -15,7 +15,7 @@ function plans_for_promo(p: unknown) {
 }
 
 export default async function AdminPlans() {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) notFound();
   const [{ data: p }, { data: subs }, { data: pays }, ready, { data: settings }] = await Promise.all([
     sb.from('plans').select('*').order('rank'),

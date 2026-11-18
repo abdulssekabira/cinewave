@@ -1,8 +1,8 @@
-import { requireStaff } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import { AddCategory, CategoryItem } from '@/components/admin/CategoryItem';
 
 export default async function Categories() {
-  const { sb } = await requireStaff();
+  const { sb } = await requireAdmin();
   const [{ data: vjs }, { data: genres }, { data: titles }, { data: tg }] = await Promise.all([
     sb.from('vjs').select('*').order('sort_order').order('name'),
     sb.from('genres').select('*').order('sort_order').order('name'),

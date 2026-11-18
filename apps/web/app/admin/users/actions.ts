@@ -1,11 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireStaff } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 
 /** Give a user a free plan for N days (testers, partners, competition winners). */
 export async function grantComplimentary(userId: string, form: FormData) {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return;
   const plan = String(form.get('plan'));
   const days = Number(form.get('days'));
@@ -22,7 +22,7 @@ export async function grantComplimentary(userId: string, form: FormData) {
 }
 
 export async function endComplimentary(subscriptionId: string) {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return;
   await sb
     .from('subscriptions')
@@ -38,7 +38,7 @@ export async function endComplimentary(subscriptionId: string) {
  * partners or change rights.
  */
 export async function setUploader(userId: string, on: boolean) {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return;
   if (on) await sb.from('user_roles').upsert({ user_id: userId, role: 'editor' }, { onConflict: 'user_id,role', ignoreDuplicates: true });
   else await sb.from('user_roles').delete().eq('user_id', userId).eq('role', 'editor');

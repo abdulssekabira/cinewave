@@ -1,8 +1,8 @@
-import { fmtDate, requireStaff, rightsActive, type Partner, type RightsRow } from '@/lib/admin';
+import { fmtDate, requireAdmin, rightsActive, type Partner, type RightsRow } from '@/lib/admin';
 import { PartnerForm } from '@/components/admin/PartnerForm';
 
 export default async function Partners() {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   const [{ data: p }, { data: r }] = await Promise.all([
     sb.from('partners').select('*').order('name'),
     sb.from('rights').select('*'),

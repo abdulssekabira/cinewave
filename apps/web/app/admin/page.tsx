@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import { ShrinkExisting } from '@/components/admin/ShrinkExisting';
-import { availability, fmtDate, fmtDateTime, requireStaff, rightsActive, type AdminTitle, type RightsRow } from '@/lib/admin';
+import { availability, fmtDate, fmtDateTime, requireAdmin, rightsActive, type AdminTitle, type RightsRow } from '@/lib/admin';
 
 type Audit = { id: number; action: string; entity: string; details: Record<string, unknown> | null; at: string };
 
 export default async function AdminOverview() {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   const [titlesRes, rightsRes, usersRes, subsRes, auditRes, readyRes, hiddenPartsRes] = await Promise.all([
     sb.from('titles').select('id, slug, title, status, updated_at').order('updated_at', { ascending: false }),
     sb.from('rights').select('*'),

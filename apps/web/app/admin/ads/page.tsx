@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { requireStaff } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 import { AdForm, AdTimingForm } from '@/components/admin/AdForms';
 import { deleteAd, setAdActive } from './actions';
 
 export const metadata: Metadata = { title: 'Adverts' };
 
 export default async function AdsPage() {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) notFound();
   const [{ data: ads }, { data: stats }, { data: settings }] = await Promise.all([
     sb.from('ads').select('*').order('created_at', { ascending: false }),

@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireStaff } from '@/lib/admin';
+import { requireAdmin } from '@/lib/admin';
 
 export type FormState = { error?: string; message?: string };
 
@@ -18,7 +18,7 @@ function money(f: FormData, k: string, label: string): { value: number | null } 
 }
 
 export async function savePlan(_: FormState, form: FormData): Promise<FormState> {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return { error: 'Only administrators can change plans.' };
 
   const id = t(form, 'id');
@@ -64,7 +64,7 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
 
 /** The Android app link shown on glemovies.com/app. */
 export async function saveAppSettings(_: FormState, form: FormData): Promise<FormState> {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return { error: 'Only the owner can change this.' };
   const url = t(form, 'android_apk_url');
   if (url && !/^https:\/\/\S+$/i.test(url)) return { error: 'The download link must start with https://' };
@@ -82,7 +82,7 @@ export async function saveAppSettings(_: FormState, form: FormData): Promise<For
 
 /** Invite-friends reward: how many friends, how many days, how many times per account. */
 export async function saveReferralSettings(_: FormState, form: FormData): Promise<FormState> {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return { error: 'Only the owner can change this.' };
   const n = (k: string, min: number, max: number) => {
     const v = Number(t(form, k));
@@ -107,7 +107,7 @@ export async function saveReferralSettings(_: FormState, form: FormData): Promis
 
 /** Welcome promotion: a free plan for every new account. */
 export async function savePromoSettings(_: FormState, form: FormData): Promise<FormState> {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return { error: 'Only the owner can change this.' };
   const on = form.get('signup_promo_on') === 'on';
   const plan = t(form, 'signup_promo_plan');
@@ -132,7 +132,7 @@ export async function savePromoSettings(_: FormState, form: FormData): Promise<F
 
 /** Business contact details shown on the Terms, Privacy, Refunds, Copyright and Contact pages. */
 export async function saveContactSettings(_: FormState, form: FormData): Promise<FormState> {
-  const { sb, isAdmin } = await requireStaff();
+  const { sb, isAdmin } = await requireAdmin();
   if (!isAdmin) return { error: 'Only the owner can change this.' };
   const email = t(form, 'contact_email').slice(0, 120);
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'That email address doesn’t look right.' };

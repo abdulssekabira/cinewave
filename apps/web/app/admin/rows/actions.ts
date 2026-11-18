@@ -1,14 +1,14 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireStaff, slugify } from '@/lib/admin';
+import { requireAdmin, slugify } from '@/lib/admin';
 
 function done() {
   revalidatePath('/', 'layout');
 }
 
 export async function createRow(form: FormData) {
-  const { sb } = await requireStaff();
+  const { sb } = await requireAdmin();
   const name = String(form.get('name') ?? '').trim();
   if (!name) return;
   const { data: last } = await sb.from('collections').select('sort_order').order('sort_order', { ascending: false }).limit(1).maybeSingle();
@@ -21,19 +21,19 @@ export async function createRow(form: FormData) {
 }
 
 export async function setRowActive(id: number, active: boolean) {
-  const { sb } = await requireStaff();
+  const { sb } = await requireAdmin();
   await sb.from('collections').update({ active }).eq('id', id);
   done();
 }
 
 export async function deleteRow(id: number) {
-  const { sb } = await requireStaff();
+  const { sb } = await requireAdmin();
   await sb.from('collections').delete().eq('id', id);
   done();
 }
 
 export async function addToRow(id: number, form: FormData) {
-  const { sb } = await requireStaff();
+  const { sb } = await requireAdmin();
   const titleId = String(form.get('title_id') ?? '');
   if (!titleId) return;
   const { data: last } = await sb
@@ -44,14 +44,14 @@ export async function addToRow(id: number, form: FormData) {
 }
 
 export async function removeFromRow(id: number, titleId: string) {
-  const { sb } = await requireStaff();
+  const { sb } = await requireAdmin();
   await sb.from('collection_items').delete().eq('collection_id', id).eq('title_id', titleId);
   done();
 }
 
 /** Swap a film with its neighbour in the row. */
 export async function moveInRow(id: number, titleId: string, dir: -1 | 1) {
-  const { sb } = await requireStaff();
+  const { sb } = await requireAdmin();
   const { data } = await sb.from('collection_items').select('title_id, position').eq('collection_id', id).order('position');
   const items = data ?? [];
   const i = items.findIndex((x) => x.title_id === titleId);
@@ -67,7 +67,7 @@ export async function moveInRow(id: number, titleId: string, dir: -1 | 1) {
 
 /** Move a whole row up or down the home page. */
 export async function moveRow(id: number, dir: -1 | 1) {
-  const { sb } = await requireStaff();
+  const { sb } = await requireAdmin();
   const { data } = await sb.from('collections').select('id, sort_order').order('sort_order');
   const rows = data ?? [];
   const i = rows.findIndex((r) => r.id === id);

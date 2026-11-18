@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const ITEMS = [
-  { href: '/admin', label: 'Overview', exact: true },
+  { href: '/admin', label: 'Overview', exact: true, adminOnly: true },
   { href: '/admin/titles', label: 'Films' },
-  { href: '/admin/categories', label: 'VJs & genres' },
-  { href: '/admin/rows', label: 'Home rows' },
-  { href: '/admin/partners', label: 'Partners' },
+  { href: '/admin/categories', label: 'VJs & genres', adminOnly: true },
+  { href: '/admin/rows', label: 'Home rows', adminOnly: true },
+  { href: '/admin/partners', label: 'Partners', adminOnly: true },
   { href: '/admin/plans', label: 'Plans', adminOnly: true },
   { href: '/admin/ads', label: 'Adverts', adminOnly: true },
   { href: '/admin/reviews', label: 'Reviews', adminOnly: true },
