@@ -21,7 +21,7 @@ export default function Watchlist() {
   if (!session) {
     content = (
       <Empty icon="time-outline" title="Sign in to use your Watchlist" text="Save films to watch later. Your list syncs between the app and the website.">
-        <Button label="Sign in" onPress={() => router.push('/login')} style={{ marginTop: 20, alignSelf: 'stretch' }} />
+        <Button label="Sign in or create account" onPress={() => router.push('/login')} style={{ marginTop: 20, alignSelf: 'stretch' }} />
       </Empty>
     );
   } else if (loading && !data) content = <Loading />;

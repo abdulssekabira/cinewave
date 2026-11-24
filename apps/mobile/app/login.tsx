@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -10,7 +10,8 @@ import { supabase } from '@/lib/supabase';
 import { colors, F, radius } from '@/lib/theme';
 
 export default function Login() {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const [mode, setMode] = useState<'signin' | 'signup'>(params.mode === 'signup' ? 'signup' : 'signin');
   const [promo, setPromo] = useState<SignupPromo | null>(null);
   useEffect(() => { getSignupPromo(supabase).then(setPromo).catch(() => {}); }, []);
   const [name, setName] = useState('');
@@ -61,6 +62,20 @@ export default function Login() {
     <KeyboardAvoidingView behavior="height" style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={styles.wrap} keyboardShouldPersistTaps="handled">
         <Text style={styles.brand}><Text style={{ color: colors.accent }}>GLE</Text> MOVIES</Text>
+        {/* New viewers kept missing the small "Create an account" link: make the choice obvious. */}
+        <View style={styles.seg} accessibilityRole="tablist">
+          {(['signup', 'signin'] as const).map((m) => (
+            <Pressable
+              key={m}
+              onPress={() => { setMode(m); setMsg(null); }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: mode === m }}
+              style={[styles.segBtn, mode === m && styles.segOn]}
+            >
+              <Text style={[styles.segText, mode === m && { color: '#fff' }]}>{m === 'signup' ? 'New? Create account' : 'I have an account'}</Text>
+            </Pressable>
+          ))}
+        </View>
         <Text style={styles.h1}>{mode === 'signin' ? 'Welcome back' : 'Create your account'}</Text>
         <Text style={styles.sub}>
           {mode === 'signin' ? 'Sign in to sync your watchlist and progress.' : 'Free to join. Watch free films with ads.'}
@@ -159,6 +174,10 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
+  seg: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.md, padding: 4, marginBottom: 22, gap: 4 },
+  segBtn: { flex: 1, paddingVertical: 12, borderRadius: radius.md - 2, alignItems: 'center' },
+  segOn: { backgroundColor: colors.accent },
+  segText: { color: colors.muted, fontFamily: F.bold, fontSize: 14 },
   promo: { borderRadius: 12, padding: 12, marginBottom: 14, backgroundColor: 'rgba(229,9,20,0.16)', borderWidth: 1, borderColor: 'rgba(245,197,24,0.45)' },
   promoTitle: { color: '#fff', fontFamily: F.bold, fontSize: 15, marginBottom: 2 },
   promoText: { color: '#eee', fontFamily: F.regular, fontSize: 13.5, lineHeight: 19 },

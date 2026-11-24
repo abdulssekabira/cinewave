@@ -35,7 +35,10 @@ export async function Header() {
             <UserIcon size={18} />
           </Link>
         ) : (
-          <Link href="/login" className="signin-link">Sign in</Link>
+          <>
+            <Link href="/login" className="signin-text">Sign in</Link>
+            <Link href="/login?mode=signup" className="signin-link">Join free</Link>
+          </>
         )}
       </div>
     </HeaderShell>

@@ -77,7 +77,7 @@ export default function Downloads() {
           <View style={styles.empty}>
             <Text style={styles.title}>Sign in to download</Text>
             <Text style={styles.text}>Offline downloads are included with Premium.</Text>
-            <Button label="Sign in" onPress={() => router.push('/login')} style={{ marginTop: 16, alignSelf: 'stretch' }} />
+            <Button label="Sign in or create account" onPress={() => router.push('/login')} style={{ marginTop: 16, alignSelf: 'stretch' }} />
           </View>
         ) : list.length === 0 ? (
           <View style={styles.empty}>

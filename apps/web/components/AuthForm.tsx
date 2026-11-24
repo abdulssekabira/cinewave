@@ -80,9 +80,9 @@ export function AuthForm({ mode, next, refCode }: { mode: Mode; next: string; re
       <div className="auth-switch">
         {mode === 'signin' && (
           <>
-            New here? <Link href={`/login?mode=signup${q}`}>Create an account</Link>
-            <br />
             <Link href="/login?mode=reset">Forgot password?</Link>
+            <div className="auth-or"><span>New to GLE Movies?</span></div>
+            <Link href={`/login?mode=signup${q}`} className="btn btn-gray" style={{ width: '100%' }}>Create a free account</Link>
           </>
         )}
         {mode !== 'signin' && (

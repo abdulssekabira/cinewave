@@ -93,9 +93,10 @@ export default function Profile() {
           </View>
         ) : (
           <View style={[styles.card, { flexDirection: 'column', alignItems: 'stretch' }]}>
-            <Text style={styles.name}>Sign in to GLE Movies</Text>
-            <Text style={[styles.email, { marginBottom: 14 }]}>Sync your watchlist and progress across devices.</Text>
-            <Button label="Sign in" onPress={() => router.push('/login')} />
+            <Text style={styles.name}>Welcome to GLE Movies</Text>
+            <Text style={[styles.email, { marginBottom: 14 }]}>New here? Create your free account to start watching.</Text>
+            <Button label="Create free account" onPress={() => router.push('/login?mode=signup')} />
+            <Button label="I already have an account" variant="ghost" onPress={() => router.push('/login')} style={{ marginTop: 10 }} />
           </View>
         )}
 

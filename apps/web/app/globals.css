@@ -918,3 +918,25 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 .helpline.compact { justify-content: flex-start; margin: 0; max-width: none; }
 .helpline.compact .helpline-title { width: auto; }
 .helpline.compact .helpline-btn { padding: 4px 10px; font-size: 12.5px; }
+
+/* Signed-out visitors: make joining obvious */
+.signin-text { font-weight: 600; font-size: 14px; color: var(--text); padding: 0 4px; }
+.signin-text:hover { text-decoration: underline; }
+.join-banner {
+  margin: 0 var(--gutter) 28px; padding: 18px 20px; border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(229,25,46,.22), rgba(229,25,46,.06)); border: 1px solid rgba(229,25,46,.45);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; position: relative; z-index: 2;
+}
+.join-banner b { display: block; font-size: 18px; margin-bottom: 4px; }
+.join-banner span { color: var(--text-muted); }
+.join-banner strong { color: var(--text); }
+.join-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.join-signin { font-size: 14px; color: var(--text-muted); text-decoration: underline; }
+.auth-or { display: flex; align-items: center; gap: 10px; margin: 22px 0 12px; color: var(--text-muted); font-size: 13px; }
+.auth-or::before, .auth-or::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.12); }
+@media (max-width: 760px) {
+  .signin-link, .signin-text { font-size: 13px; }
+  .signin-link { padding: 0 12px; }
+  .join-actions { width: 100%; }
+  .join-actions .btn { flex: 1; }
+}

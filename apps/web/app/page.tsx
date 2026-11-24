@@ -1,4 +1,4 @@
-import { getContinueWatching, getFilterCounts, getGenres, getHeroTitles, getHomeRows, getVjs, progressPercent } from '@cinewave/shared';
+import { getContinueWatching, getFilterCounts, getGenres, getHeroTitles, getHomeRows, getSignupPromo, getVjs, progressPercent } from '@cinewave/shared';
 import { getUser } from '@/lib/supabase/server';
 import { HeroCarousel } from '@/components/HeroCarousel';
 import { LandscapeCard, PosterCard } from '@/components/Poster';
@@ -26,6 +26,7 @@ export default async function HomePage() {
     getFilterCounts(sb).catch(() => ({ genres: {}, vjs: {}, years: {}, total: 0 })),
   ]);
   const ref = user ? await myReferrals(sb).catch(() => null) : null;
+  const promo = user ? null : await getSignupPromo(sb).catch(() => null);
   const showInvite = Boolean(ref && ref.rewards < ref.max_rewards);
 
   if (!hero.length && !rows.length) {
@@ -54,6 +55,21 @@ export default async function HomePage() {
               />
             ))}
           </Row>
+        )}
+        {!user && (
+          <div className="join-banner">
+            <div>
+              <b>New to GLE Movies?</b>
+              <span>
+                Create your free account in one minute
+                {promo ? <> and get <strong>{promo.days} days of {promo.planName} free</strong></> : null}.
+              </span>
+            </div>
+            <div className="join-actions">
+              <Link href="/login?mode=signup" className="btn btn-accent">Create free account</Link>
+              <Link href="/login" className="join-signin">Already a member? Sign in</Link>
+            </div>
+          </div>
         )}
         {showInvite && ref && (
           <div className="invite-banner">
