@@ -1,5 +1,6 @@
 'use server';
 
+import { periodLabel } from '@cinewave/shared';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getUser } from '@/lib/supabase/server';
@@ -36,7 +37,7 @@ export async function checkout(_: CheckoutState, form: FormData): Promise<Checko
       merchant_ref: pay.merchant_ref,
       amount: pay.amount,
       currency: pay.currency,
-      description: `GLE Movies ${p?.name ?? plan} – 1 ${period}`,
+      description: `GLE Movies ${p?.name ?? plan} – ${period === 'week' ? '1 week' : (pay.months ?? 1) === 1 ? '1 month' : periodLabel(pay.months) === 'year' ? '1 year' : periodLabel(pay.months)}`,
     }, {
       email: user.email!,
       phone: phone ? (phone.startsWith('0') ? `+256${phone.slice(1)}` : phone) : undefined,
