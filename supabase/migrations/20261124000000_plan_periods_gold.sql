@@ -1,0 +1,4 @@
+-- Applied via the Supabase connector as migration "plan_periods_gold":
+-- plans.period_months (how many months the main price buys), payments.months,
+-- create_payment/settle_payment use it; prices: Standard 12,000/1 month/3 devices,
+-- Premium 30,000/3 months/6 devices, new Gold 110,000/12 months/10 devices.

@@ -8,7 +8,7 @@ import { deleteMuxAsset, muxConfigured } from '@/lib/mux';
 
 export type FormState = { error?: string; message?: string };
 
-const PLANS = ['free', 'standard', 'premium'];
+const PLANS = ['free', 'standard', 'premium', 'gold'];
 const STATUSES = ['draft', 'published', 'archived'];
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? '').trim();

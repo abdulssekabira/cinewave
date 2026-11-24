@@ -44,13 +44,16 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
   };
 
   if (id !== 'free') {
-    const monthly = money(form, 'price', 'Monthly price');
+    const monthly = money(form, 'price', 'Price');
     const weekly = money(form, 'weekly_price', 'Weekly price');
     for (const m of [monthly, weekly]) if ('error' in m) return { error: m.error };
     const mVal = (monthly as { value: number | null }).value;
     const wVal = (weekly as { value: number | null }).value;
-    if (!mVal && !wVal) return { error: 'Set at least a monthly or a weekly price.' };
+    if (!mVal && !wVal) return { error: 'Set at least a price or a weekly price.' };
     patch.price_cents = mVal ?? 0;
+    const months = Number(t(form, 'period_months') || 1);
+    if (![1, 2, 3, 6, 12].includes(months)) return { error: 'Choose how many months the price buys.' };
+    patch.period_months = months;
     patch.weekly_price_cents = wVal || null;
     patch.active = form.get('active') === 'on';
   }

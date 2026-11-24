@@ -66,7 +66,7 @@ function PlanTag({ title }: { title: CatalogTitle }) {
   if (title.required_plan === 'free') return null;
   return (
     <View style={styles.tag}>
-      <Text style={styles.tagText}>{title.required_plan === 'premium' ? 'PREMIUM' : 'STANDARD'}</Text>
+      <Text style={styles.tagText}>{title.required_plan.toUpperCase()}</Text>
     </View>
   );
 }

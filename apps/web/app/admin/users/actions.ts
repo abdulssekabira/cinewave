@@ -9,7 +9,7 @@ export async function grantComplimentary(userId: string, form: FormData) {
   if (!isAdmin) return;
   const plan = String(form.get('plan'));
   const days = Number(form.get('days'));
-  if (!['standard', 'premium'].includes(plan) || ![7, 30, 90, 365].includes(days)) return;
+  if (!['standard', 'premium', 'gold'].includes(plan) || ![7, 30, 90, 365].includes(days)) return;
   await sb.from('subscriptions').insert({
     user_id: userId,
     plan_id: plan,

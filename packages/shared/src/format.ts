@@ -4,7 +4,22 @@ export const PLAN_LABEL: Record<PlanId, string> = {
   free: 'Free',
   standard: 'Standard',
   premium: 'Premium',
+  gold: 'Gold',
 };
+
+/** What the main price buys: "month", "3 months", "year". */
+export function periodLabel(months: number | null | undefined): string {
+  const m = months && months > 0 ? months : 1;
+  if (m === 1) return 'month';
+  if (m === 12) return 'year';
+  return `${m} months`;
+}
+
+/** Short form for tight spaces: "/mo", "/3 mo", "/yr". */
+export function periodShort(months: number | null | undefined): string {
+  const m = months && months > 0 ? months : 1;
+  return m === 1 ? '/mo' : m === 12 ? '/yr' : `/${m} mo`;
+}
 
 export function formatRuntime(minutes: number | null | undefined): string {
   if (!minutes) return '';

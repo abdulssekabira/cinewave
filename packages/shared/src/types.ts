@@ -1,4 +1,4 @@
-export type PlanId = 'free' | 'standard' | 'premium';
+export type PlanId = 'free' | 'standard' | 'premium' | 'gold';
 
 export interface Credit {
   name: string;
@@ -72,6 +72,8 @@ export interface Plan {
   name: string;
   rank: number;
   price_cents: number;
+  /** How many months the main price (price_cents) buys: 1, 3, 12… */
+  period_months?: number | null;
   weekly_price_cents: number | null;
   annual_price_cents: number | null;
   currency: string;

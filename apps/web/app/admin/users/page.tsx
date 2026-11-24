@@ -97,6 +97,7 @@ export default async function Users({ searchParams }: Props) {
                         <select name="plan" className="select a-sm" aria-label="Plan" defaultValue="premium">
                           <option value="standard">Standard</option>
                           <option value="premium">Premium</option>
+                          <option value="gold">Gold</option>
                         </select>
                         <select name="days" className="select a-sm" aria-label="Duration" defaultValue="30">
                           <option value="7">7 days</option>

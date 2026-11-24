@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { formatPrice, getActiveSubscription, getPlans, getProfile, PLAN_LABEL } from '@cinewave/shared';
+import { formatPrice, getActiveSubscription, getPlans, getProfile, periodShort, PLAN_LABEL } from '@cinewave/shared';
 import { Button, ErrorState, Loading, ScreenTitle, type IconName } from '@/components/ui';
 import { HelpLine } from '@/components/HelpLine';
 import { useAuth } from '@/lib/auth';
@@ -108,6 +108,7 @@ export default function Profile() {
               <Text style={styles.planText}>
                 {p.shows_ads ? 'With ads' : 'No ads'} · {p.max_quality}
                 {p.downloads_allowed ? ' · Downloads' : ''}
+                {p.max_devices ? ` · ${p.max_devices} devices` : ''}
               </Text>
               {p.weekly_price_cents ? (
                 <Text style={styles.planText}>or {formatPrice(p.weekly_price_cents, p.currency)} / week</Text>
@@ -115,7 +116,7 @@ export default function Profile() {
             </View>
             <Text style={styles.price}>
               {formatPrice(p.price_cents, p.currency)}
-              {p.price_cents ? <Text style={styles.per}> /mo</Text> : null}
+              {p.price_cents ? <Text style={styles.per}> {periodShort(p.period_months)}</Text> : null}
             </Text>
           </View>
         ))}

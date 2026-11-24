@@ -31,8 +31,14 @@ export function PlanForm({ plan, subscribers }: { plan: Plan; subscribers: numbe
       ) : (
         <div className="a-grid2 tight">
           <div className="a-field">
-            <label htmlFor={k('price')}>Monthly price (UGX)</label>
+            <label htmlFor={k('price')}>Price (UGX)</label>
             <input id={k('price')} name="price" className="input" inputMode="numeric" defaultValue={plan.price_cents || ''} placeholder="e.g. 10000" />
+          </div>
+          <div className="a-field">
+            <label htmlFor={k('months')}>The price buys</label>
+            <select id={k('months')} name="period_months" className="select input" defaultValue={String(plan.period_months ?? 1)}>
+              {[1, 2, 3, 6, 12].map((m) => <option key={m} value={m}>{m === 1 ? '1 month' : m === 12 ? '12 months (1 year)' : `${m} months`}</option>)}
+            </select>
           </div>
           <div className="a-field">
             <label htmlFor={k('weekly')}>Weekly price (UGX)</label>

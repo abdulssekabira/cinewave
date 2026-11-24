@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatPrice, getPlans, type Plan } from '@cinewave/shared';
+import { formatPrice, getPlans, periodLabel, type Plan } from '@cinewave/shared';
 import { getUser } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Plans' };
 
 function features(p: Plan): string[] {
   const f: string[] = [];
-  f.push(p.id === 'free' ? 'Selected free films' : p.id === 'premium' ? 'Full catalogue incl. Premium' : 'Free + Standard catalogue');
+  f.push(p.id === 'free' ? 'Selected free films' : p.id === 'premium' || p.id === 'gold' ? 'Full catalogue incl. Premium' : 'Free + Standard catalogue');
   f.push(p.shows_ads ? 'With ads' : 'No ads');
   f.push(`Up to ${p.max_quality}`);
   if (p.max_devices) f.push(`Watch on up to ${p.max_devices} devices`);
@@ -33,7 +33,7 @@ export default async function PlansPage() {
             {p.description && <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '-4px 0 8px' }}>{p.description}</p>}
             <div className="price">
               {p.price_cents > 0 || !p.weekly_price_cents ? (
-                <>{formatPrice(p.price_cents, p.currency)}{p.price_cents > 0 && <small> / month</small>}</>
+                <>{formatPrice(p.price_cents, p.currency)}{p.price_cents > 0 && <small> / {periodLabel(p.period_months)}</small>}</>
               ) : (
                 <>{formatPrice(p.weekly_price_cents, p.currency)}<small> / week</small></>
               )}

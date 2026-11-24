@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { formatPrice, type Plan } from '@cinewave/shared';
+import { formatPrice, periodLabel, type Plan } from '@cinewave/shared';
 import { getUser } from '@/lib/supabase/server';
 import { pesapalSandbox } from '@/lib/pesapal';
 import { CheckoutForm } from '@/components/CheckoutForm';
@@ -21,7 +21,7 @@ export default async function Checkout({ params, searchParams }: Props) {
 
   const options = [
     plan.weekly_price_cents ? { value: 'week', label: '1 week', price: formatPrice(plan.weekly_price_cents, plan.currency) } : null,
-    plan.price_cents ? { value: 'month', label: '1 month', price: formatPrice(plan.price_cents, plan.currency) } : null,
+    plan.price_cents ? { value: 'month', label: (plan.period_months ?? 1) === 12 ? '1 year' : (plan.period_months ?? 1) === 1 ? '1 month' : periodLabel(plan.period_months), price: formatPrice(plan.price_cents, plan.currency) } : null,
   ].filter(Boolean) as { value: string; label: string; price: string }[];
   if (!options.length) notFound();
 
@@ -42,7 +42,7 @@ export default async function Checkout({ params, searchParams }: Props) {
       />
       <p style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 20 }}>
         You’ll pay on Pesapal’s secure page with <b>MTN Mobile Money</b>, <b>Airtel Money</b> or <b>Visa/Mastercard</b>.
-        Your plan starts as soon as the payment is confirmed. It does not renew automatically: buy another week or month any time and it’s added on.
+        Your plan starts as soon as the payment is confirmed. It does not renew automatically: buy more time whenever you like and it’s added on.
       </p>
     </div>
   );
