@@ -108,8 +108,8 @@ export default function Profile() {
               <Text style={styles.planText}>
                 {p.shows_ads ? 'With ads' : 'No ads'} · {p.max_quality}
                 {p.downloads_allowed ? ' · Downloads' : ''}
-                {p.max_devices ? ` · ${p.max_devices} devices` : ''}
               </Text>
+              {p.max_devices ? <Text style={styles.planText}>Up to {p.max_devices}{'\u00a0'}devices</Text> : null}
               {p.weekly_price_cents ? (
                 <Text style={styles.planText}>or {formatPrice(p.weekly_price_cents, p.currency)} / week</Text>
               ) : null}
