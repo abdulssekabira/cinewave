@@ -92,6 +92,14 @@ export async function saveTitle(_: FormState, form: FormData): Promise<FormState
     kind: text(form, 'kind') === 'series' ? 'series' : 'movie',
   };
 
+  // A series with episodes can't become a movie: its episodes would disappear from view.
+  if (id && row.kind === 'movie') {
+    const { count } = await sb.from('episodes').select('id', { count: 'exact', head: true }).eq('title_id', id);
+    if (count) {
+      return { error: `This series has ${count} episode${count === 1 ? '' : 's'}. Keep it as “Series” so they stay visible. (Nothing was changed.)` };
+    }
+  }
+
   const res = id
     ? await sb.from('titles').update(row).eq('id', id).select('id').single()
     : await sb.from('titles').insert(row).select('id').single();
