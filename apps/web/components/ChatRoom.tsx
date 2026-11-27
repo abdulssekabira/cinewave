@@ -24,7 +24,30 @@ export function ChatRoom({ initial, userId, isAdmin, notify: notifyInit }: Props
   const [notify, setNotify] = useState(notifyInit);
   const [older, setOlder] = useState(initial.length >= 80);
   const list = useRef<HTMLDivElement>(null);
+  const page = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
+
+  // Phone keyboards cover the bottom of the page: size the chat to the part
+  // of the screen that's still visible, so the typing box stays in view.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const fit = () => {
+      const el = page.current;
+      if (!el) return;
+      const covered = window.innerHeight - vv.height;
+      if (covered > 80) {
+        el.style.height = `${vv.height + vv.offsetTop}px`;
+        el.classList.add('typing');
+        window.scrollTo(0, 0);
+        const l = list.current;
+        if (l && stick.current) l.scrollTop = l.scrollHeight;
+      } else { el.style.height = ''; el.classList.remove('typing'); }
+    };
+    vv.addEventListener('resize', fit);
+    vv.addEventListener('scroll', fit);
+    return () => { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit); };
+  }, []);
 
   useEffect(() => subscribeChat(sb, {
     presenceKey: userId ?? undefined,
@@ -95,7 +118,7 @@ export function ChatRoom({ initial, userId, isAdmin, notify: notifyInit }: Props
   }
 
   return (
-    <div className="chat-page">
+    <div className="chat-page" ref={page}>
       <div className="chat-head">
         <div>
           <h1>GLE Chat</h1>

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View,
+  ActivityIndicator, Alert, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -29,6 +29,19 @@ export default function Chat() {
   const [admin, setAdmin] = useState(false);
   const [notify, setNotify] = useState(false);
   const list = useRef<FlatList<ChatMessage>>(null);
+
+  // Keep the typing box above the keyboard. Some phones shrink the screen for
+  // the keyboard and some don't, so only add the part the phone didn't.
+  const { height: winH } = useWindowDimensions();
+  const baseH = useRef(winH);
+  const [kb, setKb] = useState(0);
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', (e) => setKb(e.endCoordinates.height));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKb(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  useEffect(() => { if (!kb) baseH.current = winH; }, [kb, winH]);
+  const lift = kb ? Math.max(0, kb - Math.max(0, baseH.current - winH)) : 0;
 
   const load = useCallback(async () => {
     const m = await getChat(supabase).catch(() => null);
@@ -147,7 +160,7 @@ export default function Chat() {
       </View>
       <Text style={st.rules}>Be respectful · No links or phone numbers · 🙈 for spoilers · Hold a message to report</Text>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={{ flex: 1, paddingBottom: lift }}>
         {msgs === null ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
         ) : (
@@ -187,7 +200,7 @@ export default function Chat() {
             <Button label="I already have an account" variant="ghost" onPress={() => router.push('/login')} style={{ marginTop: 8 }} />
           </View>
         )}
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }

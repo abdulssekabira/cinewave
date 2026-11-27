@@ -988,3 +988,7 @@ textarea.input { height: auto; padding: 10px 14px; resize: vertical; line-height
 @media (max-width: 760px) {
   .chat-head h1 { font-size: 32px; }
 }
+
+/* keyboard open on a phone: give the messages the room */
+.chat-page.typing .chat-head, .chat-page.typing .chat-rules { display: none; }
+.chat-page.typing { padding-top: calc(var(--header-h) + 4px); }
