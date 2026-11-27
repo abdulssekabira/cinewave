@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   banFromChat, CHAT_BADGE, chatColor, chatTime, clearChat, deleteChatMessage, getChat, getChatNotify,
   reportChat, sendChat, setChatNotify, subscribeChat, type ChatMessage,
@@ -33,6 +33,8 @@ export default function Chat() {
   // Keep the typing box above the keyboard. Some phones shrink the screen for
   // the keyboard and some don't, so only add the part the phone didn't.
   const { height: winH } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const tabBar = useRef(70 + insets.bottom).current; // same as the tab bar in (tabs)/_layout
   const baseH = useRef(winH);
   const [kb, setKb] = useState(0);
   useEffect(() => {
@@ -41,7 +43,8 @@ export default function Chat() {
     return () => { show.remove(); hide.remove(); };
   }, []);
   useEffect(() => { if (!kb) baseH.current = winH; }, [kb, winH]);
-  const lift = kb ? Math.max(0, kb - Math.max(0, baseH.current - winH)) : 0;
+  // The keyboard covers the tab bar too, so only the part above it needs lifting.
+  const lift = kb ? Math.max(0, kb - Math.max(0, baseH.current - winH) - tabBar) : 0;
 
   const load = useCallback(async () => {
     const m = await getChat(supabase).catch(() => null);
