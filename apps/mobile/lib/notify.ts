@@ -54,3 +54,31 @@ export async function notifyDownloadFailed(title: string) {
     trigger: Platform.OS === 'android' ? { channelId: CHANNEL } : null,
   }).catch(() => {});
 }
+
+/**
+ * Chat notifications: registers this phone for push messages and saves the
+ * token. Returns null when ready, or a reason it couldn't be set up.
+ */
+export async function registerChatPush(): Promise<string | null> {
+  try {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('chat', {
+        name: 'Chat',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        description: 'New messages in GLE Chat',
+      });
+    }
+    const cur = await Notifications.getPermissionsAsync();
+    let granted = cur.granted;
+    if (!granted && cur.canAskAgain) granted = (await Notifications.requestPermissionsAsync()).granted;
+    if (!granted) return 'Notifications are blocked for GLE Movies. Allow them in your phone’s Settings → Apps → GLE Movies → Notifications.';
+    const Constants = (await import('expo-constants')).default;
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+    const { data } = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
+    const { supabase } = await import('./supabase');
+    await supabase.rpc('save_push_token', { p_token: data, p_platform: Platform.OS });
+    return null;
+  } catch {
+    return 'Saved. Chat alerts on this phone will start working after the next app update.';
+  }
+}

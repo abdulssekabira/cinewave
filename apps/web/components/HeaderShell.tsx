@@ -25,6 +25,7 @@ function Links({ signedIn }: { signedIn: boolean }) {
     { href: '/search', label: 'Movies', active: path === '/search' && sort !== 'newest' },
     { href: '/search?sort=newest', label: 'New & Popular', active: path === '/search' && sort === 'newest' },
     ...(signedIn ? [{ href: '/watchlist', label: 'My List', active: path === '/watchlist' }] : []),
+    { href: '/chat', label: 'Chat', active: path === '/chat' },
   ];
   return (
     <>

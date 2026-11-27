@@ -6,6 +6,7 @@ import { colors, F } from '@/lib/theme';
 
 const TABS: { name: string; title: string; icon: IconName; iconActive: IconName }[] = [
   { name: 'index', title: 'Home', icon: 'home-outline', iconActive: 'home' },
+  { name: 'chat', title: 'Chat', icon: 'chatbubbles-outline', iconActive: 'chatbubbles' },
   { name: 'watchlist', title: 'Watchlist', icon: 'time-outline', iconActive: 'time' },
   { name: 'downloads', title: 'Download', icon: 'download-outline', iconActive: 'download' },
   { name: 'profile', title: 'Profile', icon: 'person-outline', iconActive: 'person' },
