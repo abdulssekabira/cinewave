@@ -56,7 +56,7 @@ export async function getHeroTitles(sb: SupabaseClient, limit = 6): Promise<Cata
 
 export async function getHomeRows(sb: SupabaseClient): Promise<HomeRow[]> {
   const [trending, latest, free, collections] = await Promise.all([
-    // popularity = people who watched it in the last 30 days (updated hourly)
+    // popularity = people who watched it in the last 7 days (updated hourly)
     sb.from(CATALOG).select('*').order('popularity', { ascending: false }).order('published_at', { ascending: false, nullsFirst: false }).limit(20),
     getLatestTitles(sb, 20).then((data) => ({ data, error: null })),
     sb.from(CATALOG).select('*').eq('required_plan', 'free').order('popularity', { ascending: false }).limit(20),
@@ -70,7 +70,7 @@ export async function getHomeRows(sb: SupabaseClient): Promise<HomeRow[]> {
 
   const rows: HomeRow[] = [
     { key: 'recent', label: 'Just Added', titles: latest.data },
-    { key: 'trending', label: 'Trending This Month', titles: trending.data as CatalogTitle[] },
+    { key: 'trending', label: 'Trending This Week', titles: trending.data as CatalogTitle[] },
     { key: 'free', label: 'Free to Watch', titles: free.data as CatalogTitle[] },
   ];
 

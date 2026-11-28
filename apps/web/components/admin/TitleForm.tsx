@@ -152,7 +152,7 @@ export function TitleForm({ title, genres, selectedGenres, vjs, canPublish = tru
               Feature on the home page hero
             </label>
             <p className="a-hint" style={{ marginTop: 12 }}>
-              Trending is automatic: {t?.popularity ?? 0} {t?.popularity === 1 ? 'person has' : 'people have'} watched this in the last 30 days.
+              Trending is automatic: {t?.popularity ?? 0} {t?.popularity === 1 ? 'person has' : 'people have'} watched this in the last 7 days.
             </p>
           </section>
 

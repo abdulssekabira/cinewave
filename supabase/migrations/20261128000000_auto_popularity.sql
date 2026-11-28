@@ -1,4 +1,4 @@
 -- Applied via the Supabase connector as "auto_popularity_monthly":
 -- public.refresh_popularity() sets titles.popularity to the number of different
--- people who watched (>1 min) or downloaded each title in the last 30 days;
+-- people who watched (>1 min) or downloaded each title in the last 7 days (was 30);
 -- pg_cron job "refresh-popularity" runs it every hour at :07.
