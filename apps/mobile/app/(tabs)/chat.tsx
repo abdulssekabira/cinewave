@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui';
 import { authHeaders, SITE } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { markChatSeen, setOnChat } from '@/lib/chatUnread';
 import { registerChatPush } from '@/lib/notify';
 import { supabase } from '@/lib/supabase';
 import { colors, F, radius } from '@/lib/theme';
@@ -52,7 +53,14 @@ export default function Chat() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const [focused, setFocused] = useState(false);
+  useFocusEffect(useCallback(() => {
+    load();
+    setOnChat(true); setFocused(true);
+    return () => { setOnChat(false); setFocused(false); };
+  }, [load]));
+  // What's on screen while the Chat tab is open counts as read (clears the badge).
+  useEffect(() => { const last = msgs?.[msgs.length - 1]; if (focused && last) markChatSeen(last.id); }, [msgs, focused]);
 
   useEffect(() => subscribeChat(supabase, {
     presenceKey: uid ?? undefined,

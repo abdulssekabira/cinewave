@@ -117,3 +117,24 @@ export function chatColor(name: string): string {
   for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return palette[h % palette.length];
 }
+
+/**
+ * Unread count for the Chat badge. `seenId` is the newest message this viewer
+ * has already seen (kept on the device). With no `seenId` yet, counts the
+ * last 24 hours so first-timers see there's activity.
+ */
+export async function countUnreadChat(sb: SupabaseClient, seenId: number | null, userId: string | null): Promise<number> {
+  let q = sb.from('chat_messages').select('id', { count: 'exact', head: true }).eq('room', CHAT_ROOM).is('deleted_at', null);
+  q = seenId ? q.gt('id', seenId) : q.gt('created_at', new Date(Date.now() - 864e5).toISOString());
+  if (userId) q = q.neq('user_id', userId);
+  const { count } = await q;
+  return count ?? 0;
+}
+
+/** Newest message id (0 if the chat is empty). */
+export async function latestChatId(sb: SupabaseClient): Promise<number> {
+  const { data } = await sb.from('chat_messages').select('id').eq('room', CHAT_ROOM).order('id', { ascending: false }).limit(1).maybeSingle();
+  return (data as { id?: number } | null)?.id ?? 0;
+}
+
+export const badgeText = (n: number) => (n > 99 ? '99+' : String(n));

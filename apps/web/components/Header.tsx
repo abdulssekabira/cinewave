@@ -18,7 +18,7 @@ export async function Header() {
   return (
     <HeaderShell>
       <Link href="/" className="wordmark" aria-label="GLE Movies home">GLE<span>MOVIES</span></Link>
-      <NavLinks signedIn={Boolean(user)} />
+      <NavLinks signedIn={Boolean(user)} userId={user?.id ?? null} />
       {user && <ChatNotifier userId={user.id} enabled={chatNotify} />}
       <div className="header-actions">
         <Link href="/search" className="icon-btn" aria-label="Search">

@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { IconName } from '@/components/ui';
+import { badgeText } from '@cinewave/shared';
+import { useChatUnread } from '@/lib/chatUnread';
 import { colors, F } from '@/lib/theme';
 
 const TABS: { name: string; title: string; icon: IconName; iconActive: IconName }[] = [
@@ -14,6 +16,7 @@ const TABS: { name: string; title: string; icon: IconName; iconActive: IconName 
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const unread = useChatUnread();
   return (
     <Tabs
       screenOptions={{
@@ -37,6 +40,9 @@ export default function TabLayout() {
           name={t.name}
           options={{
             title: t.title,
+            ...(t.name === 'chat' && unread > 0
+              ? { tabBarBadge: badgeText(unread), tabBarBadgeStyle: { backgroundColor: '#e5192e', color: '#fff', fontFamily: F.bold, fontSize: 10 } }
+              : {}),
             tabBarIcon: ({ color, focused }) => (
               <Ionicons name={focused ? t.iconActive : t.icon} size={23} color={String(color)} />
             ),

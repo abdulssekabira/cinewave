@@ -7,6 +7,7 @@ import {
   sendChat, setChatNotify, subscribeChat, type ChatMessage,
 } from '@cinewave/shared';
 import { browserClient } from '@/lib/supabase/browser';
+import { markChatSeen } from '@/lib/chat-unread';
 import { setWebChatNotify } from './ChatNotifier';
 
 type Props = { initial: ChatMessage[]; userId: string | null; isAdmin: boolean; notify: boolean };
@@ -55,6 +56,9 @@ export function ChatRoom({ initial, userId, isAdmin, notify: notifyInit }: Props
     onRemove: (id) => setMsgs((xs) => xs.filter((x) => x.id !== id)),
     onOnline: setOnline,
   }), [sb, userId]);
+
+  // Everything shown here counts as read (clears the menu badge).
+  useEffect(() => { const last = msgs[msgs.length - 1]; if (last) markChatSeen(last.id); }, [msgs]);
 
   // Stay at the bottom unless the viewer scrolled up to read older messages.
   useLayoutEffect(() => {

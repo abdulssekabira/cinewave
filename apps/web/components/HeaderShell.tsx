@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState, type ReactNode } from 'react';
+import { badgeText } from '@cinewave/shared';
+import { useChatUnread } from '@/lib/chat-unread';
 
 /** Transparent over the hero, solid once the page scrolls. */
 export function HeaderShell({ children }: { children: ReactNode }) {
@@ -16,8 +18,9 @@ export function HeaderShell({ children }: { children: ReactNode }) {
   return <header className={`site-header${scrolled ? ' scrolled' : ''}`}>{children}</header>;
 }
 
-function Links({ signedIn }: { signedIn: boolean }) {
+function Links({ signedIn, userId }: { signedIn: boolean; userId: string | null }) {
   const path = usePathname();
+  const unread = useChatUnread(userId, path === '/chat');
   const sp = useSearchParams();
   const sort = sp.get('sort');
   const items = [
@@ -37,17 +40,18 @@ function Links({ signedIn }: { signedIn: boolean }) {
           aria-current={i.active ? 'page' : undefined}
         >
           {i.label}
+          {i.href === '/chat' && unread > 0 && <span className="nav-badge" aria-label={`${unread} new messages`}>{badgeText(unread)}</span>}
         </Link>
       ))}
     </>
   );
 }
 
-export function NavLinks({ signedIn }: { signedIn: boolean }) {
+export function NavLinks({ signedIn, userId = null }: { signedIn: boolean; userId?: string | null }) {
   return (
     <nav className="nav" aria-label="Main">
       <Suspense fallback={null}>
-        <Links signedIn={signedIn} />
+        <Links signedIn={signedIn} userId={userId} />
       </Suspense>
     </nav>
   );
