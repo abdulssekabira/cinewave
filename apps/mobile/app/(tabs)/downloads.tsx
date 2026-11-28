@@ -35,7 +35,7 @@ export default function Downloads() {
   const list = useDownloads(userId);
   const [refreshing, setRefreshing] = useState(false);
   const { data: available } = useAsync(
-    async () => (await searchTitles(supabase, {})).filter((t) => t.downloadable),
+    async () => (await searchTitles(supabase, { limit: 500 })).filter((t) => t.downloadable),
     [],
   );
 

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { getFilterCounts, getGenres, getVjs, searchTitles, type SearchParams } from '@cinewave/shared';
 import { createClient } from '@/lib/supabase/server';
-import { PosterCard } from '@/components/Poster';
+import { InfiniteGrid } from '@/components/InfiniteGrid';
 import { FilterSheet } from '@/components/FilterSheet';
 
 export const metadata: Metadata = { title: 'Browse' };
@@ -27,6 +27,8 @@ export default async function SearchPage({ searchParams }: Props) {
     getVjs(sb),
     getFilterCounts(sb),
   ]);
+  // One remembered list (and scroll spot) per search + filter combination.
+  const stateKey = JSON.stringify(params);
   const vjName = vjs.find((v) => v.slug === params.vj)?.name;
   const genreName = genres.find((g) => g.slug === params.genre)?.name;
   const heading = vjName ?? genreName ?? (params.year ? `Films from ${params.year}` : null) ?? (params.kind === 'series' ? 'Series' : params.sort === 'newest' ? 'New & Popular' : 'Movies');
@@ -117,9 +119,7 @@ export default async function SearchPage({ searchParams }: Props) {
       </div>
 
       {results.length ? (
-        <div className="grid">
-          {results.map((t) => <PosterCard key={t.id} title={t} />)}
-        </div>
+        <InfiniteGrid key={stateKey} initial={results} params={params} stateKey={stateKey} />
       ) : (
         <div className="empty">
           <h2>No titles found</h2>

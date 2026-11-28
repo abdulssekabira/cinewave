@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { getFilterCounts, getGenres, getVjs, searchTitles, type CatalogTitle, type Genre, type SearchParams, type Vj } from '@cinewave/shared';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { getFilterCounts, getGenres, getVjs, SEARCH_PAGE, searchTitles, type CatalogTitle, type Genre, type SearchParams, type Vj } from '@cinewave/shared';
 import { FilterSheet } from '@/components/FilterSheet';
 import { img } from '@/lib/theme';
 import { PosterGrid } from '@/components/Grid';
@@ -26,6 +26,17 @@ export default function Search() {
   const [results, setResults] = useState<CatalogTitle[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
+  const [done, setDone] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const req = useRef(0);
+  const params = useMemo<SearchParams>(() => ({
+    query,
+    genre: genre || undefined,
+    vj: vj || undefined,
+    year: year ? Number(year) : undefined,
+    kind: (kind || undefined) as SearchParams['kind'],
+    sort: (sort || 'latest') as SearchParams['sort'],
+  }), [query, genre, vj, year, kind, sort]);
 
   useEffect(() => {
     getGenres(supabase).then(setGenres).catch(() => {});
@@ -35,20 +46,32 @@ export default function Search() {
 
   useEffect(() => {
     const t = setTimeout(() => {
+      const id = ++req.current;
       setError(null);
-      searchTitles(supabase, {
-        query,
-        genre: genre || undefined,
-        vj: vj || undefined,
-        year: year ? Number(year) : undefined,
-        kind: (kind || undefined) as SearchParams['kind'],
-        sort: (sort || 'latest') as SearchParams['sort'],
-      })
-        .then(setResults)
-        .catch((e) => setError(e instanceof Error ? e.message : 'Search failed'));
+      searchTitles(supabase, { ...params, offset: 0, limit: SEARCH_PAGE })
+        .then((r) => { if (id !== req.current) return; setResults(r); setDone(r.length < SEARCH_PAGE); })
+        .catch((e) => { if (id === req.current) setError(e instanceof Error ? e.message : 'Search failed'); });
     }, 250);
     return () => clearTimeout(t);
-  }, [query, genre, vj, year, kind, sort, nonce]);
+  }, [params, nonce]);
+
+  // Endless scrolling: the next batch, from latest to oldest.
+  const loadMore = useCallback(() => {
+    if (!results || done || loadingMore) return;
+    const id = req.current;
+    setLoadingMore(true);
+    searchTitles(supabase, { ...params, offset: results.length, limit: SEARCH_PAGE })
+      .then((r) => {
+        if (id !== req.current) return;
+        setResults((xs) => {
+          const have = new Set((xs ?? []).map((x) => x.id));
+          return [...(xs ?? []), ...r.filter((x) => !have.has(x.id))];
+        });
+        if (r.length < SEARCH_PAGE) setDone(true);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingMore(false));
+  }, [results, done, loadingMore, params]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -103,7 +126,11 @@ export default function Search() {
       ) : results && results.length === 0 ? (
         <Empty icon="search-outline" title="Nothing found" text="Try a different search or clear the filters." />
       ) : (
-        <PosterGrid titles={results ?? []} />
+        <PosterGrid
+          titles={results ?? []}
+          onEndReached={loadMore}
+          footer={loadingMore ? <ActivityIndicator color={colors.accent} style={{ marginVertical: 24 }} /> : null}
+        />
       )}
     </View>
   );

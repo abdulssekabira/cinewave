@@ -142,7 +142,13 @@ export interface SearchParams {
   access?: 'free' | 'premium';
   /** Default: latest added first. 'newest' = newest release year. */
   sort?: 'latest' | 'popular' | 'newest' | 'az';
+  /** Paging for endless scrolling. */
+  offset?: number;
+  limit?: number;
 }
+
+/** How many titles each "page" of endless scrolling loads. */
+export const SEARCH_PAGE = 48;
 
 export async function searchTitles(sb: SupabaseClient, p: SearchParams): Promise<CatalogTitle[]> {
   let q = sb.from(CATALOG).select('*');
@@ -157,7 +163,9 @@ export async function searchTitles(sb: SupabaseClient, p: SearchParams): Promise
   else if (p.sort === 'az') q = q.order('title');
   else if (p.sort === 'popular') q = q.order('popularity', { ascending: false });
   else q = q.order('published_at', { ascending: false, nullsFirst: false }).order('title');
-  const { data, error } = await q.limit(60);
+  q = q.order('id'); // stable order so pages never repeat or skip a title
+  const from = p.offset ?? 0;
+  const { data, error } = await q.range(from, from + (p.limit ?? SEARCH_PAGE) - 1);
   if (error) throw error;
   return data as CatalogTitle[];
 }
