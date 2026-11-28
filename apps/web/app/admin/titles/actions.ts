@@ -50,8 +50,7 @@ export async function saveTitle(_: FormState, form: FormData): Promise<FormState
 
   const year = optInt(form, 'release_year', 1880, 2100, 'Year');
   const runtime = optInt(form, 'runtime_minutes', 1, 1000, 'Runtime');
-  const popularity = optInt(form, 'popularity', 0, 1_000_000, 'Popularity');
-  for (const r of [year, runtime, popularity]) if ('error' in r) return { error: r.error };
+  for (const r of [year, runtime]) if ('error' in r) return { error: r.error };
 
   const ratingRaw = text(form, 'rating');
   let rating: number | null = null;
@@ -85,7 +84,6 @@ export async function saveTitle(_: FormState, form: FormData): Promise<FormState
     required_plan: plan,
     status,
     is_featured: form.get('is_featured') === 'on',
-    popularity: popularity.value ?? 0,
     rating,
     rating_source: rating === null ? null : ratingSource,
     vj_id: Number(text(form, 'vj_id')) || null,

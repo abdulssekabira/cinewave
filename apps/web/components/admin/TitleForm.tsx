@@ -151,11 +151,9 @@ export function TitleForm({ title, genres, selectedGenres, vjs, canPublish = tru
               <input type="checkbox" name="is_featured" defaultChecked={t?.is_featured ?? false} />
               Feature on the home page hero
             </label>
-            <div className="a-field" style={{ marginTop: 12 }}>
-              <label htmlFor="f-pop">Popularity (sort order)</label>
-              <input id="f-pop" name="popularity" className="input" inputMode="numeric" defaultValue={t?.popularity ?? 0} />
-              <small className="a-hint">Higher shows first in Trending.</small>
-            </div>
+            <p className="a-hint" style={{ marginTop: 12 }}>
+              Trending is automatic: {t?.popularity ?? 0} {t?.popularity === 1 ? 'person has' : 'people have'} watched this in the last 30 days.
+            </p>
           </section>
 
           <section className="a-card">
